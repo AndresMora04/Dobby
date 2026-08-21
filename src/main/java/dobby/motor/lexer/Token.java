@@ -25,6 +25,6 @@ public class Token {
 
     @Override
     public String toString() {
-        return null;
+        return tipo + " '" + valor + "' (linea " + linea + ")";
     }
 }
