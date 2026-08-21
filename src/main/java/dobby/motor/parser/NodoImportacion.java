@@ -1,10 +1,8 @@
 package dobby.motor.parser;
 
-import java.util.List;
-
-public class NodoLlamada extends Nodo {
+public class NodoImportacion extends Nodo {
     private String nombreFuncion;
-    private List<Nodo> argumentos;
+    private String archivo;
 
     public String getNombreFuncion() {
         return nombreFuncion;
@@ -14,11 +12,11 @@ public class NodoLlamada extends Nodo {
         this.nombreFuncion = nombreFuncion;
     }
 
-    public List<Nodo> getArgumentos() {
-        return argumentos;
+    public String getArchivo() {
+        return archivo;
     }
 
-    public void setArgumentos(List<Nodo> argumentos) {
-        this.argumentos = argumentos;
+    public void setArchivo(String archivo) {
+        this.archivo = archivo;
     }
 }
