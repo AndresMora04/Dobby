@@ -1,15 +1,23 @@
 package dobby.vista;
 
+import dobby.util.TemaManager;
+
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.border.LineBorder;
+
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 
 public class OutputPanel extends JPanel {
-    private JTextArea areaSalida;
+    private static final Color FONDO = new Color(16, 13, 26);
+    private static final Color TEXTO = new Color(224, 220, 210);
+
+    private final JTextArea areaSalida;
+    private final JScrollPane scroll;
 
     public OutputPanel() {
         setLayout(new BorderLayout());
@@ -18,11 +26,19 @@ public class OutputPanel extends JPanel {
         areaSalida.setLineWrap(true);
         areaSalida.setWrapStyleWord(true);
         areaSalida.setFont(new Font("Consolas", Font.PLAIN, 14));
-        areaSalida.setForeground(new Color(230, 230, 230));
-        areaSalida.setBackground(new Color(28, 28, 35));
+        areaSalida.setForeground(TEXTO);
+        areaSalida.setBackground(FONDO);
         areaSalida.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        add(new JScrollPane(areaSalida), BorderLayout.CENTER);
+        scroll = new JScrollPane(areaSalida);
+        add(scroll, BorderLayout.CENTER);
+
+        aplicarBorde();
+        TemaManager.getInstancia().agregarOyente(this::aplicarBorde);
+    }
+
+    private void aplicarBorde() {
+        scroll.setBorder(new LineBorder(TemaManager.getInstancia().getColorAcento(), 1));
     }
 
     public void agregarMensaje(String mensaje) {

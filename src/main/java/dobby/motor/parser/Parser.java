@@ -4,7 +4,7 @@ import dobby.motor.lexer.Token;
 import dobby.motor.lexer.TipoToken;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -85,7 +85,7 @@ public class Parser {
     }
 
     private Map<String, String> parametros() {
-        Map<String, String> parametros = new HashMap<>();
+        Map<String, String> parametros = new LinkedHashMap<>();
         if (verificar(")")) {
             return parametros;
         }
