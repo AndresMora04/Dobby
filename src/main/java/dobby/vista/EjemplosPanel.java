@@ -29,7 +29,17 @@ public class EjemplosPanel extends JPanel {
         setBackground(FONDO);
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
-        lista = new JList<>(EjemplosDobby.EJEMPLOS);
+        lista = new JList<>(EjemplosDobby.EJEMPLOS) {
+            @Override
+            public String getToolTipText(MouseEvent e) {
+                int indice = locationToIndex(e.getPoint());
+                if (indice < 0 || !getCellBounds(indice, indice).contains(e.getPoint())) {
+                    return null;
+                }
+                return getModel().getElementAt(indice).descripcion();
+            }
+        };
+        lista.setToolTipText("");
         lista.setBackground(FONDO);
         lista.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         lista.setFixedCellHeight(30);

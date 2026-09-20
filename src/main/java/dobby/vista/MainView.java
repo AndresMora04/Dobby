@@ -347,8 +347,22 @@ public class MainView extends JFrame {
         menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar()));
         menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar()));
 
+        JMenu menuAyuda = estilizarMenu(new JMenu("Ayuda"));
+        JMenuItem itemReferencia = estilizarItem(new JMenuItem("Referencia de Dobby"));
+        itemReferencia.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
+        itemReferencia.addActionListener(e -> new AyudaDialog(this).setVisible(true));
+        JMenuItem itemAcercaDe = estilizarItem(new JMenuItem("Acerca de Dobby"));
+        itemAcercaDe.addActionListener(e -> new AcercaDeDialog(this).setVisible(true));
+        JMenuItem itemCreditos = estilizarItem(new JMenuItem("Créditos"));
+        itemCreditos.addActionListener(e -> new CreditosDialog(this).setVisible(true));
+        menuAyuda.add(itemReferencia);
+        menuAyuda.addSeparator();
+        menuAyuda.add(itemAcercaDe);
+        menuAyuda.add(itemCreditos);
+
         menuBar.add(menuArchivo);
         menuBar.add(menuProyecto);
+        menuBar.add(menuAyuda);
         return menuBar;
     }
 

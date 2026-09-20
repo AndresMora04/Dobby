@@ -72,97 +72,271 @@ public class AyudaDialog extends ModalDialog {
     private static Map<String, String> construirTemas() {
         Map<String, String> temas = new LinkedHashMap<>();
 
-        temas.put("Palabras reservadas",
-            "Alohomora   -> declarar variable\n"
-            + "Expecto     -> declarar funcion\n"
-            + "Patronum    -> retornar valor (return)\n"
-            + "Revelio     -> salida de datos (imprimir)\n"
-            + "Legilimens  -> entrada de datos (input)\n"
-            + "Accio       -> llamar funcion\n"
-            + "Wingardium  -> ciclo for\n"
-            + "Imperio     -> ciclo while\n"
-            + "Protego / Finite -> if / else\n"
-            + "Expelliarmus -> break\n"
-            + "Reparo      -> continue\n"
-            + "Lumos / Nox -> true / false\n"
-            + "Hogwarts    -> funcion principal (main)\n"
-            + "Gringotts   -> arreglo\n"
-            + "Varita      -> struct\n"
-            + "Floo        -> importar funcion de otro archivo\n"
-            + "Obliviate   -> tipo/valor nulo");
+        temas.put("Palabras reservadas", """
+            Alohomora   -> declarar variable
+            Expecto     -> declarar función
+            Patronum    -> devolver un valor (return)
+            Revelio     -> mostrar un valor (imprimir)
+            Legilimens  -> pedir un dato al usuario (input)
+            Accio       -> llamar una función
+            Wingardium  -> ciclo for
+            Imperio     -> ciclo while
+            Protego     -> condicional (if)
+            Finite      -> alternativa del condicional (else)
+            Expelliarmus -> salir de un ciclo (break)
+            Reparo      -> saltar a la siguiente vuelta (continue)
+            Lumos / Nox -> verdadero / falso
+            Hogwarts    -> función principal (main)
+            Floo        -> importar una función de otro archivo
+            desde       -> acompaña a Floo
+            Obliviate   -> tipo y valor nulo
+            Gringotts   -> arreglo (en desarrollo)
+            Varita      -> struct (en desarrollo)
+            """);
 
-        temas.put("Sintaxis",
-            "Declaracion:   Alohomora nombre: Tipo;\n"
-            + "Asignacion:    nombre = expresion;\n"
-            + "Entrada:       nombre = Legilimens();\n"
-            + "Salida:        Revelio expresion;\n"
-            + "Llamada:       Accio funcion(args);\n"
-            + "Importacion:   Floo funcion desde \"archivo.dobby\";\n"
-            + "Bloques delimitados con { }. La indentacion no es obligatoria.");
+        temas.put("Sintaxis", """
+            Declarar variable:  Alohomora nombre: Tipo;
+            Asignar:            nombre = expresión;
+            Pedir un dato:      nombre = Legilimens();
+            Mostrar:            Revelio expresión;
+            Llamar función:     Accio función(argumentos);
+            Importar:           Floo función desde "archivo.dobby";
 
-        temas.put("Estructuras de control",
-            "Condicional:\n"
-            + "Protego (condicion) {\n"
-            + "    ...\n"
-            + "} Finite {\n"
-            + "    ...\n"
-            + "}\n\n"
-            + "El condicional multiple se logra anidando Protego/Finite.\n\n"
-            + "Ciclo while:\n"
-            + "Imperio (condicion) { ... }\n\n"
-            + "Ciclo for:\n"
-            + "Wingardium (i = 0; i < 10; i = i + 1) { ... }");
+            - Toda sentencia simple termina en punto y coma (;).
+            - Los bloques se delimitan con llaves { }. La indentación es solo estética.
+            - Los textos van entre comillas dobles: "Hola".
+            - Los decimales usan punto: 3.14
+            - Una llamada con Accio puede ser una sentencia o parte de una expresión:
+                Accio saludar("Harry");
+                c = Accio sumar(a, b);
+                Revelio Accio sumar(2, 3);
+            - Legilimens lee el dato como texto y lo convierte al tipo de la variable
+              (para un Booleano se escribe Lumos o Nox).
+            """);
 
-        temas.put("Funciones",
-            "Expecto sumar(a: Entero, b: Entero): Entero {\n"
-            + "    Patronum a + b;\n"
-            + "}\n\n"
-            + "Hogwarts() {\n"
-            + "    ...\n"
-            + "}\n\n"
-            + "Toda funcion Expecto que no sea de tipo Obliviate\n"
-            + "debe incluir un Patronum antes de cerrar su cuerpo.\n"
-            + "Hogwarts es el unico punto de entrada del programa.");
+        temas.put("Estructuras de control", """
+            Condicional:
+            Protego (condición) {
+                ...
+            } Finite {
+                ...
+            }
 
-        temas.put("Operaciones",
-            "Aritmeticas: +  -  *  /\n"
-            + "Relacionales: ==  !=  >  <  >=  <=\n"
-            + "Logicas: && (y)   || (o)   ! (no)");
+            Para elegir entre varias opciones se anida Protego dentro de Finite.
 
-        temas.put("Semantica",
-            "- Todo programa inicia con Hogwarts() { }\n"
-            + "- Toda variable debe declararse con Alohomora antes de usarse\n"
-            + "- Los bloques se delimitan con { }\n"
-            + "- No se puede llamar una funcion no declarada con Expecto\n"
-            + "- Las importaciones (Floo) se validan en compilacion:\n"
-            + "  existencia de archivo/funcion, cantidad de argumentos,\n"
-            + "  tipos, duplicados e importaciones circulares");
+            Ciclo while:
+            Imperio (condición) { ... }
 
-        temas.put("Tipos de datos",
-            "Simples:\n"
-            + "  Entero, Decimal, Booleano, Texto, Caracter, Obliviate (nulo)\n\n"
-            + "Compuestos:\n"
-            + "  Gringotts (arreglo)\n"
-            + "  Varita (struct)");
+            Ciclo for:
+            Wingardium (i = 0; i < 10; i = i + 1) { ... }
+            (la variable del ciclo se declara sola si aún no existe)
 
-        temas.put("Importaciones",
-            "Floo funcion desde \"archivo.dobby\";\n\n"
-            + "Permite usar en este archivo una funcion definida\n"
-            + "en otro archivo del mismo proyecto.");
+            Dentro de un ciclo:
+            Expelliarmus;   sale del ciclo
+            Reparo;         salta a la siguiente vuelta
 
-        temas.put("Ejemplos",
-            "Expecto sumar(a: Entero, b: Entero): Entero {\n"
-            + "    Patronum a + b;\n"
-            + "}\n\n"
-            + "Hogwarts() {\n"
-            + "    Alohomora edad: Entero;\n"
-            + "    edad = Legilimens();\n"
-            + "    Protego (edad >= 11) {\n"
-            + "        Revelio \"Puede entrar a Hogwarts\";\n"
-            + "    } Finite {\n"
-            + "        Revelio \"Muy joven para Hogwarts\";\n"
-            + "    }\n"
-            + "}");
+            La condición debe ser un Booleano (Lumos o Nox).
+            """);
+
+        temas.put("Funciones", """
+            Expecto nombre(parámetro: Tipo, ...): TipoRetorno {
+                ...
+                Patronum valor;
+            }
+
+            Hogwarts() {
+                ...
+            }
+
+            - Toda función que no sea de tipo Obliviate debe terminar con
+              Patronum valor;. Patronum siempre lleva un valor.
+            - Una función Obliviate no devuelve nada y no necesita Patronum.
+            - Los parámetros y las variables son locales a su función.
+              No existen variables globales.
+            - Los bloques (Protego, Imperio, Wingardium) no crean un ámbito nuevo:
+              una variable declarada dentro existe hasta que termina la función.
+            - Una función puede llamarse a sí misma (recursión).
+            - Hogwarts() es el punto de entrada: sin parámetros y sin tipo de retorno.
+            """);
+
+        temas.put("Operaciones", """
+            Aritméticas:   +  -  *  /
+            Relacionales:  ==  !=  >  <  >=  <=
+            Lógicas:       && (y)   || (o)   ! (no)
+
+            - Se pueden usar paréntesis: (10 + 5) * 2
+            - + también une textos: "Hola, " + nombre
+            - La división entre dos Enteros es entera: 7 / 2 da 3.
+            - Dividir entre cero es un error de ejecución.
+            - Con > < >= <= ambos lados deben ser números.
+            """);
+
+        temas.put("Tipos de datos", """
+            Simples:
+              Entero      11
+              Decimal     3.14
+              Booleano    Lumos / Nox
+              Texto       "Harry"
+              Caracter    un solo carácter (se maneja como texto)
+              Obliviate   nulo; también es el tipo de una función sin retorno
+
+            Revelio muestra los Booleanos como Lumos / Nox y el nulo como Obliviate.
+
+            Compuestos (todavía en desarrollo):
+              Gringotts   arreglo
+              Varita      struct
+            """);
+
+        temas.put("Semántica", """
+            - Todo programa inicia con Hogwarts() { }.
+            - Toda variable debe declararse con Alohomora antes de usarse.
+            - Una variable no puede declararse dos veces en la misma función.
+            - No se puede llamar una función que no esté declarada con Expecto
+              en el archivo o importada con Floo.
+            - Toda función que no sea Obliviate debe devolver un valor con Patronum.
+            - Las importaciones (Floo) se validan al compilar: existencia del
+              archivo, existencia de la función, cantidad de argumentos, tipos,
+              declaraciones duplicadas e importaciones circulares.
+            """);
+
+        temas.put("Importaciones (Floo)", """
+            Floo función desde "archivo.dobby";
+
+            Permite usar en este archivo una función definida en otro.
+
+            operaciones.dobby
+                Expecto sumar(a: Entero, b: Entero): Entero {
+                    Patronum a + b;
+                }
+
+            principal.dobby
+                Floo sumar desde "operaciones.dobby";
+
+                Hogwarts() {
+                    Revelio Accio sumar(2, 3);
+                }
+
+            Reglas:
+            - Va entre comillas y con la extensión .dobby.
+            - La ruta es relativa a la carpeta del archivo que importa:
+              "lib/operaciones.dobby" o "../otro.dobby".
+            - Una línea Floo por cada función que se quiera importar.
+            - Se ejecuta el archivo de la pestaña activa. El Hogwarts() de un
+              archivo importado se ignora.
+            - Cada archivo ve solo sus propias funciones y las que importó. Dos
+              archivos pueden tener una función con el mismo nombre sin chocar.
+            - Si un archivo importado está abierto con cambios sin guardar, se
+              usa lo que se ve en pantalla.
+            - Guarda el archivo o abre una carpeta como proyecto antes de usar
+              Floo, para que se sepa dónde buscar.
+            - Errores posibles: el archivo no existe, no declara esa función,
+              la función ya existe en este archivo, importación circular,
+              cantidad o tipo de argumentos incorrectos.
+            """);
+
+        temas.put("Ejemplos", """
+            Hola mundo
+                Hogwarts() {
+                    Revelio "Hola, mundo";
+                }
+
+            Condicional y entrada
+                Hogwarts() {
+                    Alohomora edad: Entero;
+                    edad = Legilimens();
+                    Protego (edad >= 11) {
+                        Revelio "Puede entrar a Hogwarts";
+                    } Finite {
+                        Revelio "Muy joven para Hogwarts";
+                    }
+                }
+
+            Función recursiva
+                Expecto factorial(n: Entero): Entero {
+                    Protego (n <= 1) {
+                        Patronum 1;
+                    }
+                    Patronum n * Accio factorial(n - 1);
+                }
+
+                Hogwarts() {
+                    Revelio Accio factorial(5);
+                }
+
+            Ciclo con salida anticipada
+                Hogwarts() {
+                    Wingardium (i = 0; i < 10; i = i + 1) {
+                        Protego (i == 5) {
+                            Expelliarmus;
+                        }
+                        Revelio i;
+                    }
+                }
+
+            Hay más ejemplos listos para insertar en la pestaña Ejemplos del
+            panel izquierdo.
+            """);
+
+        temas.put("Proyectos y archivos", """
+            - Archivo > Abrir carpeta...: abre una carpeta como proyecto. El árbol
+              muestra sus archivos .dobby, incluidas las subcarpetas.
+            - Un click en el árbol abre el archivo en una pestaña.
+            - Click derecho en una carpeta: Nuevo archivo aquí.
+              Click derecho en un archivo: Renombrar o Eliminar.
+            - Cada pestaña muestra un punto si tiene cambios sin guardar y se
+              cierra con su X.
+            - Guardar, Guardar como y Guardar todo están en el menú Archivo.
+            - Al cerrar una pestaña o la ventana con cambios pendientes, se pregunta
+              si se quieren guardar.
+            - Compilar revisa el archivo de la pestaña activa y sus importaciones.
+              Ejecutar lo compila y lo corre.
+            """);
+
+        temas.put("Atajos de teclado", """
+            Ctrl + N            Nuevo archivo
+            Ctrl + O            Abrir archivo
+            Ctrl + Shift + O    Abrir carpeta
+            Ctrl + S            Guardar
+            Ctrl + Shift + S    Guardar como
+            Ctrl + W            Cerrar pestaña
+            F6                  Compilar
+            F5                  Ejecutar
+            F1                  Esta ayuda
+            """);
+
+        temas.put("Errores comunes", """
+            Los errores se muestran así:  [archivo.dobby] mensaje (linea N)
+
+            Se esperaba ';'
+                Falta el punto y coma al final de una sentencia.
+
+            La variable 'x' no ha sido declarada
+                Falta Alohomora antes de usarla, o el nombre está mal escrito.
+
+            La funcion 'x' no esta declarada ni importada
+                Falta el Expecto o el Floo, o el nombre está mal escrito.
+
+            La funcion 'x' espera N argumento(s) pero recibio M
+                La llamada con Accio pasa una cantidad distinta de argumentos.
+
+            El argumento N de 'x' debe ser de tipo T
+                Se pasó un valor literal de otro tipo.
+
+            La funcion 'x' ya esta declarada o importada en este archivo
+                Hay una función propia y un Floo con el mismo nombre.
+
+            El archivo 'x' no existe
+                La ruta del Floo es incorrecta. Recuerda las comillas y .dobby.
+
+            Importacion circular: a.dobby -> b.dobby -> a.dobby
+                Dos archivos se importan entre sí.
+
+            Se esperaba un valor booleano (Lumos/Nox) en la condicion
+                La condición de Protego, Imperio o Wingardium no es Booleana.
+
+            No se encontro la funcion principal Hogwarts()
+                Ejecutaste un archivo que no tiene Hogwarts.
+            """);
 
         return temas;
     }
