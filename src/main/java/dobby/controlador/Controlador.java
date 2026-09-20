@@ -54,7 +54,7 @@ public class Controlador {
         vista.getPanelSalida().limpiar();
         vista.getPanelSalida().agregarMensaje("Archivo nuevo creado en memoria.");
         vista.getPanelSalida().agregarMensaje("Ya puedes modificarlo y compilarlo.");
-        vista.setTitle("Dobby - Entorno de Desarrollo");
+        vista.setTitle("Dobby");
     }
 
     public void manejarAbrir() {
