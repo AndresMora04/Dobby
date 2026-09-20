@@ -7,6 +7,7 @@ public class ArchivoDobby {
     private String nombre;
     private String contenido;
     private boolean modificado;
+    private int posicionCursor;
 
     public ArchivoDobby(Path ruta) {
         this.ruta = ruta;
@@ -42,5 +43,13 @@ public class ArchivoDobby {
 
     public void setModificado(boolean modificado) {
         this.modificado = modificado;
+    }
+
+    public int getPosicionCursor() {
+        return posicionCursor;
+    }
+
+    public void setPosicionCursor(int posicionCursor) {
+        this.posicionCursor = posicionCursor;
     }
 }

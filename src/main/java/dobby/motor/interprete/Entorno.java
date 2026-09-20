@@ -1,11 +1,22 @@
 package dobby.motor.interprete;
 
+import dobby.motor.parser.NodoFuncion;
+
 import java.util.HashMap;
 import java.util.Map;
 
 public class Entorno {
     private final Map<String, Object> valores = new HashMap<>();
     private final Map<String, String> tipos = new HashMap<>();
+    private final Map<String, NodoFuncion> ambito;
+
+    public Entorno(Map<String, NodoFuncion> ambito) {
+        this.ambito = ambito;
+    }
+
+    public Map<String, NodoFuncion> getAmbito() {
+        return ambito;
+    }
 
     public void declarar(String nombre, String tipo, int linea) {
         if (tipos.containsKey(nombre)) {

@@ -24,6 +24,26 @@ public final class FileUtil {
         }
     }
 
+    public static List<Path> listarArchivosDobbyRecursivo(Path carpeta, int profundidad) throws IOException {
+        try (Stream<Path> flujo = Files.walk(carpeta, profundidad)) {
+            return flujo.filter(Files::isRegularFile)
+                .filter(FileUtil::esArchivoDobby)
+                .filter(ruta -> !estaEnCarpetaOculta(carpeta, ruta))
+                .sorted()
+                .toList();
+        }
+    }
+
+    private static boolean estaEnCarpetaOculta(Path raiz, Path ruta) {
+        Path relativa = raiz.relativize(ruta);
+        for (int i = 0; i < relativa.getNameCount() - 1; i++) {
+            if (relativa.getName(i).toString().startsWith(".")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean esArchivoDobby(Path ruta) {
         return ruta.getFileName().toString().endsWith(".dobby");
     }

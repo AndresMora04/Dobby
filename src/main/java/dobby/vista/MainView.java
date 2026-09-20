@@ -16,6 +16,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.ImageIcon;
+import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
 import java.awt.BorderLayout;
@@ -24,6 +25,11 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Toolkit;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -39,6 +45,7 @@ public class MainView extends JFrame {
     private FileTreePanel panelArbolArchivos;
     private EjemplosPanel panelEjemplos;
     private EditorPanel panelEditor;
+    private PestanasEditor panelPestanas;
     private OutputPanel panelSalida;
     private JToolBar barraHerramientas;
     private JMenuBar barraMenu;
@@ -66,7 +73,13 @@ public class MainView extends JFrame {
         setSize(1024, 680);
         setMinimumSize(new Dimension(800, 550));
         setLocationRelativeTo(null);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                salir();
+            }
+        });
         aplicarIconoVentana();
 
         panelBienvenida = new BienvenidaPanel();
@@ -76,9 +89,14 @@ public class MainView extends JFrame {
             panelTransicion.iniciar(() -> mostrarCarta(CARTA_PRINCIPAL));
         });
 
-        panelArbolArchivos = new FileTreePanel();
+        panelArbolArchivos = new FileTreePanel(() -> {
+            if (controlador != null) {
+                controlador.manejarAbrirCarpeta();
+            }
+        });
         panelEjemplos = new EjemplosPanel();
         panelEditor = new EditorPanel();
+        panelPestanas = new PestanasEditor();
         panelSalida = new OutputPanel();
         barraHerramientas = crearBarraHerramientas();
         barraMenu = crearBarraMenu();
@@ -87,7 +105,11 @@ public class MainView extends JFrame {
 
         JPanel panelLateral = crearPanelLateral();
 
-        JSplitPane divisionVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, panelEditor, panelSalida);
+        JPanel zonaEditor = new JPanel(new BorderLayout());
+        zonaEditor.add(panelPestanas, BorderLayout.NORTH);
+        zonaEditor.add(panelEditor, BorderLayout.CENTER);
+
+        JSplitPane divisionVertical = new JSplitPane(JSplitPane.VERTICAL_SPLIT, zonaEditor, panelSalida);
         divisionVertical.setResizeWeight(0.75);
 
         JSplitPane divisionHorizontal = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, panelLateral, divisionVertical);
@@ -275,6 +297,24 @@ public class MainView extends JFrame {
         UIManager.put("Separator.foreground", acento);
     }
 
+    private JMenuItem crearItem(String texto, KeyStroke atajo, Runnable accion) {
+        JMenuItem item = estilizarItem(new JMenuItem(texto));
+        if (atajo != null) {
+            item.setAccelerator(atajo);
+        }
+        item.addActionListener(e -> {
+            if (controlador != null) {
+                accion.run();
+            }
+        });
+        return item;
+    }
+
+    private KeyStroke atajo(int tecla, boolean mayuscula) {
+        int mascara = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        return KeyStroke.getKeyStroke(tecla, mayuscula ? mascara | InputEvent.SHIFT_DOWN_MASK : mascara);
+    }
+
     private JMenuBar crearBarraMenu() {
         aplicarColoresUIManagerMenu();
 
@@ -283,58 +323,43 @@ public class MainView extends JFrame {
         menuBar.setBorder(BorderFactory.createEmptyBorder());
 
         JMenu menuArchivo = estilizarMenu(new JMenu("Archivo"));
-        JMenuItem itemNuevo = estilizarItem(new JMenuItem("Nuevo"));
-        JMenuItem itemAbrir = estilizarItem(new JMenuItem("Abrir"));
-        JMenuItem itemGuardar = estilizarItem(new JMenuItem("Guardar"));
+        menuArchivo.add(crearItem("Nuevo", atajo(KeyEvent.VK_N, false), () -> controlador.manejarNuevoArchivo()));
+        menuArchivo.add(crearItem("Abrir archivo...", atajo(KeyEvent.VK_O, false), () -> controlador.manejarAbrir()));
+        menuArchivo.add(crearItem("Abrir carpeta...", atajo(KeyEvent.VK_O, true), () -> controlador.manejarAbrirCarpeta()));
+        menuArchivo.addSeparator();
+        menuArchivo.add(crearItem("Guardar", atajo(KeyEvent.VK_S, false), () -> controlador.manejarGuardar()));
+        menuArchivo.add(crearItem("Guardar como...", atajo(KeyEvent.VK_S, true), () -> controlador.manejarGuardarComo()));
+        menuArchivo.add(crearItem("Guardar todo", null, () -> controlador.manejarGuardarTodo()));
+        menuArchivo.addSeparator();
+        menuArchivo.add(crearItem("Cerrar pestaña", atajo(KeyEvent.VK_W, false), () -> controlador.manejarCerrarPestana()));
+        menuArchivo.addSeparator();
         JMenuItem itemInicio = estilizarItem(new JMenuItem("Inicio"));
-        JMenuItem itemSalir = estilizarItem(new JMenuItem("Salir"));
-        itemNuevo.addActionListener(e -> {
-            if (controlador != null) {
-                controlador.manejarNuevoArchivo();
-            }
-        });
-        itemAbrir.addActionListener(e -> {
-            if (controlador != null) {
-                controlador.manejarAbrir();
-            }
-        });
-        itemGuardar.addActionListener(e -> {
-            if (controlador != null) {
-                controlador.manejarGuardar();
-            }
-        });
         itemInicio.addActionListener(e -> {
             mostrarCarta(CARTA_TRANSICION);
             panelTransicion.iniciar(() -> mostrarCarta(CARTA_BIENVENIDA));
         });
-        itemSalir.addActionListener(e -> dispose());
-        menuArchivo.add(itemNuevo);
-        menuArchivo.add(itemAbrir);
-        menuArchivo.add(itemGuardar);
-        menuArchivo.addSeparator();
         menuArchivo.add(itemInicio);
+        JMenuItem itemSalir = estilizarItem(new JMenuItem("Salir"));
+        itemSalir.addActionListener(e -> salir());
         menuArchivo.add(itemSalir);
 
         JMenu menuProyecto = estilizarMenu(new JMenu("Proyecto"));
-        JMenuItem itemCompilar = estilizarItem(new JMenuItem("Compilar"));
-        JMenuItem itemEjecutar = estilizarItem(new JMenuItem("Ejecutar"));
-        itemCompilar.addActionListener(e -> {
-            if (controlador != null) {
-                controlador.manejarCompilar();
-            }
-        });
-        itemEjecutar.addActionListener(e -> {
-            if (controlador != null) {
-                controlador.manejarEjecutar();
-            }
-        });
-        menuProyecto.add(itemCompilar);
-        menuProyecto.add(itemEjecutar);
+        menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar()));
+        menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar()));
 
         menuBar.add(menuArchivo);
         menuBar.add(menuProyecto);
         return menuBar;
     }
+
+    private void salir() {
+        if (controlador != null) {
+            controlador.manejarSalir();
+        } else {
+            System.exit(0);
+        }
+    }
+
 
     public void setControlador(Controlador controlador) {
         this.controlador = controlador;
@@ -346,6 +371,10 @@ public class MainView extends JFrame {
 
     public EditorPanel getPanelEditor() {
         return panelEditor;
+    }
+
+    public PestanasEditor getPanelPestanas() {
+        return panelPestanas;
     }
 
     public OutputPanel getPanelSalida() {

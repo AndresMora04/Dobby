@@ -9,6 +9,24 @@ public class NodoFuncion extends Nodo {
     private String tipoRetorno;
     private List<Nodo> cuerpo;
     private boolean esPrincipal;
+    private Map<String, NodoFuncion> ambito;
+    private String archivo;
+
+    public String getArchivo() {
+        return archivo;
+    }
+
+    public void setArchivo(String archivo) {
+        this.archivo = archivo;
+    }
+
+    public Map<String, NodoFuncion> getAmbito() {
+        return ambito;
+    }
+
+    public void setAmbito(Map<String, NodoFuncion> ambito) {
+        this.ambito = ambito;
+    }
 
     public String getNombre() {
         return nombre;

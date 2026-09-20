@@ -55,6 +55,8 @@ public class EditorPanel extends JPanel {
     private final Lexer lexer = new Lexer();
     private final Highlighter.HighlightPainter pintorLineaActual = new ResaltadoLinea(COLOR_LINEA_ACTUAL);
     private boolean actualizandoEstilo;
+    private boolean cargandoTexto;
+    private Runnable alCambiarTexto;
     private Object marcaLineaActual;
 
     private class PanelNumerosLinea extends JPanel {
@@ -138,11 +140,13 @@ public class EditorPanel extends JPanel {
             @Override
             public void insertUpdate(DocumentEvent e) {
                 resaltar();
+                notificarCambio();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
                 resaltar();
+                notificarCambio();
             }
 
             @Override
@@ -250,11 +254,39 @@ public class EditorPanel extends JPanel {
     }
 
     public void setTexto(String texto) {
-        areaTexto.setText(texto);
+        cargandoTexto = true;
+        try {
+            areaTexto.setText(texto);
+            areaTexto.setCaretPosition(0);
+        } finally {
+            cargandoTexto = false;
+        }
     }
 
     public void limpiar() {
-        areaTexto.setText("");
+        setTexto("");
+    }
+
+    public void alCambiarTexto(Runnable alCambiarTexto) {
+        this.alCambiarTexto = alCambiarTexto;
+    }
+
+    private void notificarCambio() {
+        if (!cargandoTexto && alCambiarTexto != null) {
+            alCambiarTexto.run();
+        }
+    }
+
+    public int getPosicionCursor() {
+        return areaTexto.getCaretPosition();
+    }
+
+    public void setPosicionCursor(int posicion) {
+        areaTexto.setCaretPosition(Math.max(0, Math.min(posicion, areaTexto.getDocument().getLength())));
+    }
+
+    public void enfocar() {
+        areaTexto.requestFocusInWindow();
     }
 
     public void insertarEnCursor(String texto) {

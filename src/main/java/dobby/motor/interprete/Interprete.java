@@ -83,7 +83,7 @@ public class Interprete {
                 + nombresParametros.size() + " argumento(s) pero recibio " + argumentos.size(), funcion.getLinea());
         }
 
-        Entorno entorno = new Entorno();
+        Entorno entorno = new Entorno(funcion.getAmbito() != null ? funcion.getAmbito() : funciones);
         for (int i = 0; i < nombresParametros.size(); i++) {
             String nombre = nombresParametros.get(i);
             String tipo = tiposParametros.get(i);
@@ -95,6 +95,11 @@ public class Interprete {
             ejecutarBloque(funcion.getCuerpo(), entorno);
         } catch (SenalRetorno senal) {
             return senal.getValor();
+        } catch (ErrorEjecucion error) {
+            if (error.getArchivo() == null) {
+                error.setArchivo(funcion.getArchivo());
+            }
+            throw error;
         }
 
         String tipoRetorno = funcion.getTipoRetorno();
@@ -208,7 +213,7 @@ public class Interprete {
     }
 
     private Object evaluarLlamada(NodoLlamada nodo, Entorno entorno) {
-        NodoFuncion funcion = funciones.get(nodo.getNombreFuncion());
+        NodoFuncion funcion = entorno.getAmbito().get(nodo.getNombreFuncion());
         if (funcion == null) {
             throw new ErrorEjecucion("La funcion '" + nodo.getNombreFuncion() + "' no esta declarada", nodo.getLinea());
         }

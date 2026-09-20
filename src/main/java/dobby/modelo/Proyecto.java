@@ -1,12 +1,13 @@
 package dobby.modelo;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Proyecto {
     private String nombre;
     private Path carpeta;
-    private List<ArchivoDobby> archivos;
+    private List<ArchivoDobby> archivos = new ArrayList<>();
     private ArchivoDobby archivoPrincipal;
 
     public Proyecto(String nombre, Path carpeta) {
@@ -47,5 +48,6 @@ public class Proyecto {
     }
 
     public void agregarArchivo(ArchivoDobby archivo) {
+        archivos.add(archivo);
     }
 }

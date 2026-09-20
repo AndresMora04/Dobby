@@ -21,7 +21,7 @@ import java.awt.geom.RoundRectangle2D;
 public class BotonBarra extends JButton {
 
     public enum Icono {
-        NUEVO, ABRIR, GUARDAR, COMPILAR, EJECUTAR
+        NUEVO, ABRIR, GUARDAR, COMPILAR, EJECUTAR, NINGUNO
     }
 
     private final Icono icono;
@@ -55,7 +55,7 @@ public class BotonBarra extends JButton {
     @Override
     public Dimension getPreferredSize() {
         FontMetrics fm = getFontMetrics(getFont());
-        int ancho = fm.stringWidth(getText()) + 56;
+        int ancho = fm.stringWidth(getText()) + (icono == Icono.NINGUNO ? 40 : 56);
         return new Dimension(ancho, 40);
     }
 
@@ -86,13 +86,16 @@ public class BotonBarra extends JButton {
         g2.draw(fondo);
 
         g2.setColor(sobre ? Color.WHITE : acentoClaro);
-        dibujarIcono(g2, 14, h / 2 - 8, 16);
+        if (icono != Icono.NINGUNO) {
+            dibujarIcono(g2, 14, h / 2 - 8, 16);
+        }
 
         g2.setFont(getFont());
         g2.setColor(sobre ? Color.WHITE : new Color(232, 227, 218));
         FontMetrics fm = g2.getFontMetrics();
         int yTexto = (h - fm.getHeight()) / 2 + fm.getAscent();
-        g2.drawString(getText(), 38, yTexto);
+        int xTexto = icono == Icono.NINGUNO ? (w - fm.stringWidth(getText())) / 2 : 38;
+        g2.drawString(getText(), xTexto, yTexto);
 
         g2.dispose();
     }
@@ -126,6 +129,8 @@ public class BotonBarra extends JButton {
                 marca.lineTo(x + t / 2 - 2, y + t - 2);
                 marca.lineTo(x + t, y);
                 g2.draw(marca);
+            }
+            case NINGUNO -> {
             }
             case EJECUTAR -> {
                 Path2D triangulo = new Path2D.Float();

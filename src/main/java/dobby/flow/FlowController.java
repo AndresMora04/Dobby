@@ -4,10 +4,15 @@ import dobby.modelo.ArchivoDobby;
 import dobby.modelo.Proyecto;
 import dobby.motor.interprete.ResultadoEjecucion;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+
 public class FlowController {
     private Proyecto proyectoActivo;
     private ArchivoDobby archivoActivo;
     private ResultadoEjecucion ultimoResultado;
+    private final List<ArchivoDobby> archivosAbiertos = new ArrayList<>();
 
     public FlowController() {
     }
@@ -34,5 +39,18 @@ public class FlowController {
 
     public void setUltimoResultado(ResultadoEjecucion ultimoResultado) {
         this.ultimoResultado = ultimoResultado;
+    }
+
+    public List<ArchivoDobby> getArchivosAbiertos() {
+        return archivosAbiertos;
+    }
+
+    public ArchivoDobby buscarAbierto(Path ruta) {
+        for (ArchivoDobby archivo : archivosAbiertos) {
+            if (ruta.equals(archivo.getRuta())) {
+                return archivo;
+            }
+        }
+        return null;
     }
 }
