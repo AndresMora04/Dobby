@@ -509,7 +509,7 @@ public class Parser {
     }
 
     private boolean verificar(String valor) {
-        return !finDeTokens() && actual().getValor().equals(valor);
+        return !finDeTokens() && actual().getTipo() != TipoToken.TEXTO && actual().getValor().equals(valor);
     }
 
     private boolean finDeTokens() {
