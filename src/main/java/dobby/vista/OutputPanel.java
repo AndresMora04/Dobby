@@ -81,7 +81,22 @@ public class OutputPanel extends JPanel {
     }
 
     public void agregarError(String mensajeError) {
-        encolar("[ERROR] " + mensajeError);
+        temporizador.stop();
+        if (lineaActual != null) {
+            areaSalida.append(lineaActual.substring(posicion));
+        }
+        while (!colaMensajes.isEmpty()) {
+            if (areaSalida.getDocument().getLength() > 0) {
+                areaSalida.append(System.lineSeparator());
+            }
+            areaSalida.append(colaMensajes.poll());
+        }
+        if (areaSalida.getDocument().getLength() > 0) {
+            areaSalida.append(System.lineSeparator());
+        }
+        areaSalida.append("[ERROR] " + mensajeError);
+        lineaActual = null;
+        posicion = 0;
     }
 
     public void limpiar() {

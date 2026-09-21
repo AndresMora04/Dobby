@@ -3,20 +3,9 @@ package dobby.motor.enlazador;
 import dobby.motor.lexer.Lexer;
 import dobby.motor.lexer.Token;
 import dobby.motor.parser.Nodo;
-import dobby.motor.parser.NodoAsignacion;
-import dobby.motor.parser.NodoDeclaracionVariable;
 import dobby.motor.parser.NodoFuncion;
 import dobby.motor.parser.NodoImportacion;
-import dobby.motor.parser.NodoImpresion;
-import dobby.motor.parser.NodoLiteral;
-import dobby.motor.parser.NodoLlamada;
-import dobby.motor.parser.NodoMientras;
-import dobby.motor.parser.NodoOperacionBinaria;
-import dobby.motor.parser.NodoOperacionUnaria;
-import dobby.motor.parser.NodoPara;
 import dobby.motor.parser.NodoPrograma;
-import dobby.motor.parser.NodoRetorno;
-import dobby.motor.parser.NodoSi;
 import dobby.motor.parser.Parser;
 
 import java.io.IOException;
@@ -52,6 +41,11 @@ public class Enlazador {
         String etiqueta = clave != null ? clave.getFileName().toString() : null;
         NodoPrograma programa = parsear(codigo, etiqueta, true);
         construirModulo(programa, clave, etiqueta, carpeta);
+        boolean hayPrincipal = programa.getSentencias().stream()
+            .anyMatch(n -> n instanceof NodoFuncion f && f.isEsPrincipal());
+        if (!hayPrincipal) {
+            throw new ErrorEnlace(prefijo(etiqueta) + "No se encontro la funcion principal Hogwarts()");
+        }
         return new Enlace(programa, cache.size(), tokensEntrada);
     }
 
@@ -63,9 +57,9 @@ public class Enlazador {
             }
             return parser.parsear(tokens);
         } catch (ErrorEnlace e) {
-            throw e;
+            throw new ErrorEnlace(e.getTipo(), prefijo(etiqueta) + e.getMessage());
         } catch (RuntimeException e) {
-            throw new ErrorEnlace(prefijo(etiqueta) + e.getMessage());
+            throw new ErrorEnlace("Error de sintaxis", prefijo(etiqueta) + e.getMessage());
         }
     }
 
@@ -75,7 +69,8 @@ public class Enlazador {
         for (Nodo sentencia : programa.getSentencias()) {
             if (sentencia instanceof NodoFuncion funcion) {
                 if (propias.putIfAbsent(funcion.getNombre(), funcion) != null) {
-                    throw error(etiqueta, "La funcion '" + funcion.getNombre() + "' esta declarada mas de una vez", funcion.getLinea());
+                    throw new ErrorEnlace(prefijo(etiqueta) + "La funcion '" + funcion.getNombre()
+                        + "' esta declarada mas de una vez (linea " + funcion.getLinea() + ")");
                 }
             } else if (sentencia instanceof NodoImportacion importacion) {
                 importaciones.add(importacion);
@@ -106,7 +101,7 @@ public class Enlazador {
             funcion.setArchivo(etiqueta);
         }
         for (NodoFuncion funcion : propias.values()) {
-            validarSentencias(funcion.getCuerpo(), ambito, etiqueta);
+            new ValidadorSemantico().validar(funcion);
         }
         return new Modulo(propias);
     }
@@ -167,83 +162,6 @@ public class Enlazador {
         return cadena.append(destino.getFileName()).toString();
     }
 
-    private void validarSentencias(List<Nodo> sentencias, Map<String, NodoFuncion> ambito, String etiqueta) {
-        if (sentencias == null) {
-            return;
-        }
-        for (Nodo sentencia : sentencias) {
-            validarNodo(sentencia, ambito, etiqueta);
-        }
-    }
-
-    private void validarNodo(Nodo nodo, Map<String, NodoFuncion> ambito, String etiqueta) {
-        switch (nodo) {
-            case null -> {
-            }
-            case NodoDeclaracionVariable n -> validarNodo(n.getValorInicial(), ambito, etiqueta);
-            case NodoAsignacion n -> validarNodo(n.getExpresion(), ambito, etiqueta);
-            case NodoImpresion n -> validarNodo(n.getExpresion(), ambito, etiqueta);
-            case NodoRetorno n -> validarNodo(n.getExpresion(), ambito, etiqueta);
-            case NodoSi n -> {
-                validarNodo(n.getCondicion(), ambito, etiqueta);
-                validarSentencias(n.getSentenciasSiVerdadero(), ambito, etiqueta);
-                validarSentencias(n.getSentenciasSiFalso(), ambito, etiqueta);
-            }
-            case NodoMientras n -> {
-                validarNodo(n.getCondicion(), ambito, etiqueta);
-                validarSentencias(n.getCuerpo(), ambito, etiqueta);
-            }
-            case NodoPara n -> {
-                validarNodo(n.getInicializacion(), ambito, etiqueta);
-                validarNodo(n.getCondicion(), ambito, etiqueta);
-                validarNodo(n.getIncremento(), ambito, etiqueta);
-                validarSentencias(n.getCuerpo(), ambito, etiqueta);
-            }
-            case NodoOperacionBinaria n -> {
-                validarNodo(n.getIzquierda(), ambito, etiqueta);
-                validarNodo(n.getDerecha(), ambito, etiqueta);
-            }
-            case NodoOperacionUnaria n -> validarNodo(n.getOperando(), ambito, etiqueta);
-            case NodoLlamada n -> validarLlamada(n, ambito, etiqueta);
-            default -> {
-            }
-        }
-    }
-
-    private void validarLlamada(NodoLlamada llamada, Map<String, NodoFuncion> ambito, String etiqueta) {
-        NodoFuncion funcion = ambito.get(llamada.getNombreFuncion());
-        if (funcion == null) {
-            throw error(etiqueta, "La funcion '" + llamada.getNombreFuncion() + "' no esta declarada ni importada", llamada.getLinea());
-        }
-        List<String> tipos = new ArrayList<>(funcion.getParametros().values());
-        List<Nodo> argumentos = llamada.getArgumentos();
-        if (argumentos.size() != tipos.size()) {
-            throw error(etiqueta, "La funcion '" + funcion.getNombre() + "' espera " + tipos.size()
-                + " argumento(s) pero recibio " + argumentos.size(), llamada.getLinea());
-        }
-        for (int i = 0; i < argumentos.size(); i++) {
-            Nodo argumento = argumentos.get(i);
-            if (argumento instanceof NodoLiteral literal && !esCompatible(tipos.get(i), literal.getValor())) {
-                throw error(etiqueta, "El argumento " + (i + 1) + " de '" + funcion.getNombre() + "' debe ser de tipo "
-                    + tipos.get(i), llamada.getLinea());
-            }
-            validarNodo(argumento, ambito, etiqueta);
-        }
-    }
-
-    private boolean esCompatible(String tipo, Object valor) {
-        if (valor == null || tipo == null) {
-            return true;
-        }
-        return switch (tipo) {
-            case "Entero" -> valor instanceof Integer;
-            case "Decimal" -> valor instanceof Integer || valor instanceof Double;
-            case "Booleano" -> valor instanceof Boolean;
-            case "Texto", "Caracter" -> valor instanceof String;
-            default -> true;
-        };
-    }
-
     private Path normalizar(Path ruta) {
         return ruta.toAbsolutePath().normalize();
     }
@@ -253,6 +171,6 @@ public class Enlazador {
     }
 
     private ErrorEnlace error(String etiqueta, String mensaje, int linea) {
-        return new ErrorEnlace(prefijo(etiqueta) + mensaje + " (linea " + linea + ")");
+        return new ErrorEnlace("Error de importacion", prefijo(etiqueta) + mensaje + " (linea " + linea + ")");
     }
 }

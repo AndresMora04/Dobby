@@ -90,7 +90,12 @@ public class Parser {
             return parametros;
         }
         do {
+            Token tokenNombre = actual();
             String nombre = consumirIdentificador();
+            if (parametros.containsKey(nombre)) {
+                throw new RuntimeException("El parametro '" + nombre + "' esta declarado mas de una vez"
+                    + " (linea " + tokenNombre.getLinea() + ")");
+            }
             consumir(":");
             String tipoParametro = tipo();
             parametros.put(nombre, tipoParametro);

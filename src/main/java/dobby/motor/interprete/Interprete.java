@@ -84,17 +84,18 @@ public class Interprete {
         }
 
         Entorno entorno = new Entorno(funcion.getAmbito() != null ? funcion.getAmbito() : funciones);
-        for (int i = 0; i < nombresParametros.size(); i++) {
-            String nombre = nombresParametros.get(i);
-            String tipo = tiposParametros.get(i);
-            entorno.declarar(nombre, tipo, funcion.getLinea());
-            entorno.asignar(nombre, coercionar(argumentos.get(i), tipo), funcion.getLinea());
-        }
-
         try {
-            ejecutarBloque(funcion.getCuerpo(), entorno);
-        } catch (SenalRetorno senal) {
-            return senal.getValor();
+            for (int i = 0; i < nombresParametros.size(); i++) {
+                String nombre = nombresParametros.get(i);
+                String tipo = tiposParametros.get(i);
+                entorno.declarar(nombre, tipo, funcion.getLinea());
+                entorno.asignar(nombre, coercionar(argumentos.get(i), tipo, funcion.getLinea()), funcion.getLinea());
+            }
+            try {
+                ejecutarBloque(funcion.getCuerpo(), entorno);
+            } catch (SenalRetorno senal) {
+                return coercionar(senal.getValor(), funcion.getTipoRetorno(), senal.getLinea());
+            }
         } catch (ErrorEjecucion error) {
             if (error.getArchivo() == null) {
                 error.setArchivo(funcion.getArchivo());
@@ -148,13 +149,13 @@ public class Interprete {
                 entorno.declarar(n.getNombre(), n.getTipo(), n.getLinea());
                 if (n.getValorInicial() != null) {
                     Object valor = evaluarExpresion(n.getValorInicial(), entorno);
-                    entorno.asignar(n.getNombre(), coercionar(valor, n.getTipo()), n.getLinea());
+                    entorno.asignar(n.getNombre(), coercionar(valor, n.getTipo(), n.getLinea()), n.getLinea());
                 }
             }
             case NodoAsignacion n -> {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
                 String tipoDeclarado = entorno.obtenerTipo(n.getNombreVariable());
-                entorno.asignar(n.getNombreVariable(), coercionar(valor, tipoDeclarado), n.getLinea());
+                entorno.asignar(n.getNombreVariable(), coercionar(valor, tipoDeclarado, n.getLinea()), n.getLinea());
             }
             case NodoImpresion n -> {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
@@ -162,7 +163,7 @@ public class Interprete {
             }
             case NodoRetorno n -> {
                 Object valor = n.getExpresion() != null ? evaluarExpresion(n.getExpresion(), entorno) : null;
-                throw new SenalRetorno(valor);
+                throw new SenalRetorno(valor, n.getLinea());
             }
             case NodoSi n -> {
                 if (esVerdadero(evaluarExpresion(n.getCondicion(), entorno), n.getLinea())) {
@@ -329,16 +330,37 @@ public class Interprete {
         throw new ErrorEjecucion("Se esperaba un valor booleano (Lumos/Nox) en la condicion", linea);
     }
 
-    private Object coercionar(Object valor, String tipoDeclarado) {
+    private Object coercionar(Object valor, String tipoDeclarado, int linea) {
+        if (valor == null && tipoDeclarado != null && !tipoDeclarado.equals("Obliviate")) {
+            throw new ErrorEjecucion("No se recibio un valor de tipo " + tipoDeclarado, linea);
+        }
+        if ("Decimal".equals(tipoDeclarado) && valor instanceof Number numero) {
+            return numero.doubleValue();
+        }
         if (!(valor instanceof String texto) || tipoDeclarado == null) {
             return valor;
         }
-        return switch (tipoDeclarado) {
-            case "Entero" -> Integer.parseInt(texto.trim());
-            case "Decimal" -> Double.parseDouble(texto.trim());
-            case "Booleano" -> texto.trim().equalsIgnoreCase("Lumos");
-            default -> valor;
-        };
+        try {
+            return switch (tipoDeclarado) {
+                case "Entero" -> Integer.parseInt(texto.trim());
+                case "Decimal" -> Double.parseDouble(texto.trim());
+                case "Booleano" -> {
+                    if (!texto.trim().equalsIgnoreCase("Lumos") && !texto.trim().equalsIgnoreCase("Nox")) {
+                        throw new ErrorEjecucion("El tipo Booleano requiere Lumos o Nox", linea);
+                    }
+                    yield texto.trim().equalsIgnoreCase("Lumos");
+                }
+                case "Caracter" -> {
+                    if (texto.length() != 1) {
+                        throw new ErrorEjecucion("El tipo Caracter requiere un solo caracter", linea);
+                    }
+                    yield texto;
+                }
+                default -> valor;
+            };
+        } catch (NumberFormatException e) {
+            throw new ErrorEjecucion("No se pudo convertir la entrada a tipo " + tipoDeclarado, linea);
+        }
     }
 
     private String convertirATexto(Object valor) {

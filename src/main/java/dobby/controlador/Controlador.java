@@ -9,6 +9,7 @@ import dobby.motor.enlazador.Enlazador;
 import dobby.motor.interprete.Interprete;
 import dobby.motor.interprete.ResultadoEjecucion;
 import dobby.util.FileUtil;
+import dobby.util.ErrorFormatter;
 import dobby.vista.DialogoNombre;
 import dobby.vista.DialogoOpciones;
 import dobby.vista.MainView;
@@ -169,7 +170,7 @@ public class Controlador {
                 vista.getPanelSalida().agregarMensaje("Archivos importados: " + enlace.archivosImportados());
             }
         } catch (RuntimeException e) {
-            registrarError(e.getMessage());
+            registrarError(e);
         }
     }
 
@@ -179,7 +180,7 @@ public class Controlador {
         try {
             enlace = enlazarActivo();
         } catch (RuntimeException e) {
-            registrarError(e.getMessage());
+            registrarError(e);
             return;
         }
 
@@ -194,7 +195,8 @@ public class Controlador {
             vista.getPanelSalida().agregarMensaje(resultado.getSalida().stripTrailing());
         }
         for (String error : resultado.getErrores()) {
-            vista.getPanelSalida().agregarError(error);
+            vista.getPanelSalida().agregarError(
+                ErrorFormatter.formatearMensaje("Error de ejecucion", nombreArchivoActivo(), error));
         }
     }
 
@@ -218,13 +220,20 @@ public class Controlador {
         return FileUtil.leerArchivo(ruta);
     }
 
-    private void registrarError(String mensaje) {
+    private void registrarError(RuntimeException error) {
+        String tipo = error instanceof ErrorEnlace enlace ? enlace.getTipo() : "Error de compilacion";
+        String mensaje = ErrorFormatter.formatearMensaje(tipo, nombreArchivoActivo(), error.getMessage());
         ResultadoEjecucion resultado = new ResultadoEjecucion();
         resultado.setExito(false);
         resultado.setSalida("");
         resultado.setErrores(List.of(mensaje));
         flowController.setUltimoResultado(resultado);
         vista.getPanelSalida().agregarError(mensaje);
+    }
+
+    private String nombreArchivoActivo() {
+        ArchivoDobby activo = flowController.getArchivoActivo();
+        return activo != null ? activo.getNombre() : null;
     }
 
     private List<ArchivoDobby> archivosAbiertos() {
