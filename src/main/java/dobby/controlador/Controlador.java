@@ -1,6 +1,7 @@
 package dobby.controlador;
 
 import dobby.flow.FlowController;
+import dobby.flow.GestorProyecto;
 import dobby.modelo.ArchivoDobby;
 import dobby.modelo.Proyecto;
 import dobby.motor.enlazador.Enlace;
@@ -16,12 +17,15 @@ import dobby.vista.MainView;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.Timer;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -35,16 +39,20 @@ public class Controlador {
                 Revelio "Puede entrar a Hogwarts";
             }
             """;
-    private static final int PROFUNDIDAD_PROYECTO = 6;
 
     private final MainView vista;
     private final FlowController flowController;
     private final Interprete interprete;
+    private final GestorProyecto gestorProyecto;
+    private final Timer revisionPrincipal;
     private int contadorSinTitulo;
 
     public Controlador(MainView vista, FlowController flowController) {
         this.vista = vista;
         this.flowController = flowController;
+        this.gestorProyecto = new GestorProyecto(this::leerCodigo);
+        this.revisionPrincipal = new Timer(500, e -> actualizarPrincipal());
+        this.revisionPrincipal.setRepeats(false);
         this.interprete = new Interprete(mensaje -> JOptionPane.showInputDialog(vista, mensaje, "Legilimens", JOptionPane.QUESTION_MESSAGE));
         inicializarListeners();
         crearSinTitulo("");
@@ -56,16 +64,47 @@ public class Controlador {
         vista.getPanelPestanas().alCerrar(this::cerrarArchivo);
         vista.getPanelArbolArchivos().alAbrirArchivo(this::abrirRuta);
         vista.getPanelArbolArchivos().alNuevoArchivo(this::crearArchivoEn);
+        vista.getPanelArbolArchivos().alNuevoProyecto(this::manejarNuevoProyecto);
         vista.getPanelArbolArchivos().alRenombrar(this::renombrarArchivo);
         vista.getPanelArbolArchivos().alEliminar(this::eliminarArchivo);
         vista.getPanelEditor().alCambiarTexto(this::alEditar);
     }
 
     public void manejarNuevoArchivo() {
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto != null) {
+            crearArchivoEn(proyecto.getCarpeta());
+            return;
+        }
         vista.getPanelSalida().limpiar();
         ArchivoDobby archivo = crearSinTitulo(PLANTILLA_NUEVO);
         vista.getPanelSalida().agregarMensaje("Archivo nuevo: " + archivo.getNombre());
         vista.getPanelSalida().agregarMensaje("Ya puedes modificarlo y compilarlo.");
+    }
+
+    public void manejarNuevoProyecto() {
+        JFileChooser selector = new JFileChooser(directorioInicial());
+        selector.setDialogTitle("Carpeta donde crear el proyecto");
+        selector.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (selector.showOpenDialog(vista) != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        String nombre = DialogoNombre.pedir(vista, "Nuevo proyecto", "Nombre del proyecto", "MiProyecto");
+        if (nombre == null) {
+            return;
+        }
+        try {
+            Proyecto proyecto = gestorProyecto.crear(selector.getSelectedFile().toPath(), nombre.trim());
+            if (cargarProyecto(proyecto.getCarpeta()) == null) {
+                return;
+            }
+            abrirRuta(proyecto.getCarpeta().resolve("principal.dobby"));
+            vista.getPanelSalida().agregarMensaje("Proyecto creado: " + proyecto.getNombre());
+        } catch (FileAlreadyExistsException e) {
+            vista.getPanelSalida().agregarError("Ya existe una carpeta o archivo con ese nombre.");
+        } catch (IOException | IllegalArgumentException e) {
+            vista.getPanelSalida().agregarError("No se pudo crear el proyecto: " + e.getMessage());
+        }
     }
 
     public void manejarAbrir() {
@@ -92,12 +131,30 @@ public class Controlador {
         if (proyecto == null) {
             return;
         }
+        ArchivoDobby principal = proyecto.getArchivoPrincipal();
+        if (principal != null) {
+            abrirRuta(principal.getRuta());
+        } else if (!proyecto.getArchivos().isEmpty()) {
+            abrirRuta(proyecto.getArchivos().getFirst().getRuta());
+        }
         vista.getPanelSalida().limpiar();
         int total = proyecto.getArchivos().size();
         vista.getPanelSalida().agregarMensaje("Proyecto abierto: " + proyecto.getNombre());
         vista.getPanelSalida().agregarMensaje(total == 0
             ? "La carpeta todavia no tiene archivos .dobby."
             : "Archivos .dobby encontrados: " + total);
+    }
+
+    public void manejarCerrarProyecto() {
+        revisionPrincipal.stop();
+        flowController.setProyectoActivo(null);
+        vista.getPanelArbolArchivos().limpiar();
+        refrescarVista();
+        vista.getPanelSalida().agregarMensaje("Proyecto cerrado. Las pestanas abiertas se conservan.");
+    }
+
+    public void manejarRefrescarProyecto() {
+        refrescarProyectoActual();
     }
 
     public void manejarGuardar() {
@@ -156,14 +213,14 @@ public class Controlador {
     public void manejarCompilar() {
         vista.getPanelSalida().limpiar();
         try {
-            Enlace enlace = enlazarActivo();
+            Enlace enlace = enlazarPrograma();
             ResultadoEjecucion resultado = new ResultadoEjecucion();
             resultado.setExito(true);
             resultado.setSalida("Compilacion exitosa.");
             resultado.setErrores(new ArrayList<>());
             flowController.setUltimoResultado(resultado);
 
-            vista.getPanelSalida().agregarMensaje("Compilacion exitosa: " + flowController.getArchivoActivo().getNombre());
+            vista.getPanelSalida().agregarMensaje("Compilacion exitosa: " + nombreArchivoEntrada());
             vista.getPanelSalida().agregarMensaje("Tokens encontrados: " + enlace.tokens());
             vista.getPanelSalida().agregarMensaje("Declaraciones principales: " + enlace.programa().getSentencias().size());
             if (enlace.archivosImportados() > 0) {
@@ -178,7 +235,7 @@ public class Controlador {
         vista.getPanelSalida().limpiar();
         Enlace enlace;
         try {
-            enlace = enlazarActivo();
+            enlace = enlazarPrograma();
         } catch (RuntimeException e) {
             registrarError(e);
             return;
@@ -189,27 +246,40 @@ public class Controlador {
 
         boolean haySalida = resultado.getSalida() != null && !resultado.getSalida().isEmpty();
         if (resultado.isExito()) {
-            vista.getPanelSalida().agregarMensaje("Ejecucion exitosa.");
+            vista.getPanelSalida().agregarMensaje("Ejecucion exitosa: " + nombreArchivoEntrada());
         }
         if (haySalida) {
             vista.getPanelSalida().agregarMensaje(resultado.getSalida().stripTrailing());
         }
         for (String error : resultado.getErrores()) {
             vista.getPanelSalida().agregarError(
-                ErrorFormatter.formatearMensaje("Error de ejecucion", nombreArchivoActivo(), error));
+                ErrorFormatter.formatearMensaje("Error de ejecucion", nombreArchivoEntrada(), error));
         }
     }
 
-    private Enlace enlazarActivo() {
+    private Enlace enlazarPrograma() {
+        revisionPrincipal.stop();
         sincronizarBuffer();
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto != null) {
+            try {
+                return gestorProyecto.enlazar(proyecto);
+            } catch (ErrorEnlace e) {
+                ArchivoDobby principal = proyecto.getArchivoPrincipal();
+                vista.getPanelArbolArchivos().actualizarPrincipal(
+                    principal != null ? principal.getRuta() : null, e.getMessage());
+                throw e;
+            } finally {
+                vista.getPanelArbolArchivos().cargarProyecto(proyecto);
+                refrescarVista();
+            }
+        }
         ArchivoDobby activo = flowController.getArchivoActivo();
-        String codigo = activo.getContenido();
+        String codigo = activo != null ? activo.getContenido() : null;
         if (codigo == null || codigo.isBlank()) {
             throw new ErrorEnlace("No hay codigo para compilar.");
         }
-        Proyecto proyecto = flowController.getProyectoActivo();
-        Path carpetaBase = proyecto != null ? proyecto.getCarpeta() : null;
-        return new Enlazador(this::leerCodigo).enlazar(activo.getRuta(), codigo, carpetaBase);
+        return new Enlazador(this::leerCodigo).enlazar(activo.getRuta(), codigo, null);
     }
 
     private String leerCodigo(Path ruta) throws IOException {
@@ -222,7 +292,7 @@ public class Controlador {
 
     private void registrarError(RuntimeException error) {
         String tipo = error instanceof ErrorEnlace enlace ? enlace.getTipo() : "Error de compilacion";
-        String mensaje = ErrorFormatter.formatearMensaje(tipo, nombreArchivoActivo(), error.getMessage());
+        String mensaje = ErrorFormatter.formatearMensaje(tipo, nombreArchivoEntrada(), error.getMessage());
         ResultadoEjecucion resultado = new ResultadoEjecucion();
         resultado.setExito(false);
         resultado.setSalida("");
@@ -231,7 +301,13 @@ public class Controlador {
         vista.getPanelSalida().agregarError(mensaje);
     }
 
-    private String nombreArchivoActivo() {
+    private String nombreArchivoEntrada() {
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto != null) {
+            ArchivoDobby principal = proyecto.getArchivoPrincipal();
+            return principal != null ? proyecto.getCarpeta().relativize(principal.getRuta()).toString()
+                : proyecto.getNombre();
+        }
         ArchivoDobby activo = flowController.getArchivoActivo();
         return activo != null ? activo.getNombre() : null;
     }
@@ -285,6 +361,9 @@ public class Controlador {
             activo.setModificado(true);
             refrescarVista();
         }
+        if (flowController.getProyectoActivo() != null) {
+            revisionPrincipal.restart();
+        }
     }
 
     private void refrescarVista() {
@@ -292,7 +371,9 @@ public class Controlador {
         vista.getPanelPestanas().refrescar(archivosAbiertos(), activo);
 
         boolean conRuta = activo != null && activo.getRuta() != null;
-        vista.setTitle(conRuta ? "Dobby - " + activo.getNombre() + (activo.isModificado() ? " *" : "") : "Dobby");
+        Proyecto proyecto = flowController.getProyectoActivo();
+        String titulo = proyecto != null ? "Dobby - " + proyecto.getNombre() : "Dobby";
+        vista.setTitle(activo != null ? titulo + " - " + activo.getNombre() + (activo.isModificado() ? " *" : "") : titulo);
 
         Set<Path> modificadas = new HashSet<>();
         for (ArchivoDobby archivo : archivosAbiertos()) {
@@ -365,7 +446,7 @@ public class Controlador {
             return;
         }
         try {
-            FileUtil.escribirArchivo(destino, PLANTILLA_NUEVO);
+            Files.writeString(destino, "", StandardOpenOption.CREATE_NEW);
         } catch (IOException e) {
             vista.getPanelSalida().limpiar();
             vista.getPanelSalida().agregarError("No se pudo crear el archivo: " + e.getMessage());
@@ -459,27 +540,36 @@ public class Controlador {
     }
 
     private Proyecto cargarProyecto(Path carpetaOriginal) {
+        revisionPrincipal.stop();
+        sincronizarBuffer();
         Path carpeta = normalizar(carpetaOriginal);
-        List<Path> rutas;
+        Proyecto proyecto;
         try {
-            rutas = FileUtil.listarArchivosDobbyRecursivo(carpeta, PROFUNDIDAD_PROYECTO);
+            proyecto = gestorProyecto.cargar(carpeta);
         } catch (IOException | UncheckedIOException e) {
             vista.getPanelSalida().limpiar();
             vista.getPanelSalida().agregarError("No se pudo leer la carpeta: " + carpeta);
             return null;
         }
 
-        Path nombreCarpeta = carpeta.getFileName();
-        Proyecto proyecto = new Proyecto(nombreCarpeta != null ? nombreCarpeta.toString() : carpeta.toString(), carpeta);
-        for (Path ruta : rutas) {
-            ArchivoDobby archivo = new ArchivoDobby(ruta);
-            archivo.setNombre(ruta.getFileName().toString());
-            proyecto.agregarArchivo(archivo);
-        }
         flowController.setProyectoActivo(proyecto);
+        actualizarPrincipal();
         vista.getPanelArbolArchivos().cargarProyecto(proyecto);
         refrescarVista();
         return proyecto;
+    }
+
+    private void actualizarPrincipal() {
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto == null) {
+            return;
+        }
+        try {
+            ArchivoDobby principal = gestorProyecto.buscarPrincipal(proyecto);
+            vista.getPanelArbolArchivos().actualizarPrincipal(principal.getRuta(), null);
+        } catch (ErrorEnlace e) {
+            vista.getPanelArbolArchivos().actualizarPrincipal(null, e.getMessage());
+        }
     }
 
     private boolean guardar(ArchivoDobby archivo, boolean forzarDialogo) {
@@ -579,6 +669,7 @@ public class Controlador {
             return;
         }
         abiertos.remove(indice);
+        revisionPrincipal.restart();
         if (flowController.getArchivoActivo() != archivo) {
             refrescarVista();
             return;

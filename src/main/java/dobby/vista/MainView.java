@@ -323,6 +323,7 @@ public class MainView extends JFrame {
         menuBar.setBorder(BorderFactory.createEmptyBorder());
 
         JMenu menuArchivo = estilizarMenu(new JMenu("Archivo"));
+        menuArchivo.add(crearItem("Nuevo proyecto...", atajo(KeyEvent.VK_N, true), () -> controlador.manejarNuevoProyecto()));
         menuArchivo.add(crearItem("Nuevo", atajo(KeyEvent.VK_N, false), () -> controlador.manejarNuevoArchivo()));
         menuArchivo.add(crearItem("Abrir archivo...", atajo(KeyEvent.VK_O, false), () -> controlador.manejarAbrir()));
         menuArchivo.add(crearItem("Abrir carpeta...", atajo(KeyEvent.VK_O, true), () -> controlador.manejarAbrirCarpeta()));
@@ -346,6 +347,9 @@ public class MainView extends JFrame {
         JMenu menuProyecto = estilizarMenu(new JMenu("Proyecto"));
         menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar()));
         menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar()));
+        menuProyecto.addSeparator();
+        menuProyecto.add(crearItem("Actualizar archivos", null, () -> controlador.manejarRefrescarProyecto()));
+        menuProyecto.add(crearItem("Cerrar proyecto", null, () -> controlador.manejarCerrarProyecto()));
 
         JMenu menuAyuda = estilizarMenu(new JMenu("Ayuda"));
         JMenuItem itemReferencia = estilizarItem(new JMenuItem("Referencia de Dobby"));

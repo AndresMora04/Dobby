@@ -62,6 +62,9 @@ public class FileTreePanel extends JPanel {
     private final DefaultTreeModel modeloArbol;
     private Path carpetaProyecto;
     private Consumer<Path> alNuevoArchivo;
+    private Runnable alNuevoProyecto;
+    private Path rutaPrincipal;
+    private final JLabel estadoPrincipal = new JLabel("Principal: sin detectar");
     private Consumer<Path> alRenombrar;
     private Consumer<Path> alEliminar;
     private final CardLayout cartas = new CardLayout();
@@ -88,6 +91,12 @@ public class FileTreePanel extends JPanel {
         contenido.add(crearEstadoVacio(alPedirCarpeta), CARTA_VACIA);
         contenido.add(scroll, CARTA_ARBOL);
         add(contenido, BorderLayout.CENTER);
+        estadoPrincipal.setForeground(TEXTO);
+        estadoPrincipal.setPreferredSize(new Dimension(180, 24));
+        estadoPrincipal.setMinimumSize(new Dimension(0, 24));
+        estadoPrincipal.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+        estadoPrincipal.setVisible(false);
+        add(estadoPrincipal, BorderLayout.SOUTH);
         cartas.show(contenido, CARTA_VACIA);
 
         arbol.addMouseListener(new MouseAdapter() {
@@ -142,6 +151,13 @@ public class FileTreePanel extends JPanel {
         BotonBarra boton = new BotonBarra("Abrir carpeta", BotonBarra.Icono.NINGUNO);
         boton.setAlignmentX(Component.CENTER_ALIGNMENT);
         boton.addActionListener(e -> alPedirCarpeta.run());
+        BotonBarra nuevo = new BotonBarra("Nuevo proyecto", BotonBarra.Icono.NUEVO);
+        nuevo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        nuevo.addActionListener(e -> {
+            if (alNuevoProyecto != null) {
+                alNuevoProyecto.run();
+            }
+        });
 
         columna.add(javax.swing.Box.createRigidArea(new Dimension(0, 36)));
         columna.add(titulo);
@@ -149,6 +165,8 @@ public class FileTreePanel extends JPanel {
         columna.add(ayuda);
         columna.add(javax.swing.Box.createRigidArea(new Dimension(0, 18)));
         columna.add(boton);
+        columna.add(javax.swing.Box.createRigidArea(new Dimension(0, 8)));
+        columna.add(nuevo);
         panel.add(columna);
         return panel;
     }
@@ -160,9 +178,15 @@ public class FileTreePanel extends JPanel {
             public Component getTreeCellRendererComponent(JTree arbol, Object valor, boolean seleccionado,
                                                           boolean expandido, boolean hoja, int fila, boolean foco) {
                 super.getTreeCellRendererComponent(arbol, valor, seleccionado, expandido, hoja, fila, foco);
-                if (valor instanceof DefaultMutableTreeNode nodo && nodo.getUserObject() instanceof EntradaArchivo entrada
-                    && rutasModificadas.contains(entrada.ruta())) {
-                    setText(entrada.nombre() + "  ●");
+                if (valor instanceof DefaultMutableTreeNode nodo && nodo.getUserObject() instanceof EntradaArchivo entrada) {
+                    String texto = entrada.nombre();
+                    if (entrada.ruta().equals(rutaPrincipal)) {
+                        texto += " (principal)";
+                    }
+                    if (rutasModificadas.contains(entrada.ruta())) {
+                        texto += "  ●";
+                    }
+                    setText(texto);
                 }
                 return this;
             }
@@ -182,6 +206,28 @@ public class FileTreePanel extends JPanel {
 
     public void alNuevoArchivo(Consumer<Path> alNuevoArchivo) {
         this.alNuevoArchivo = alNuevoArchivo;
+    }
+
+    public void alNuevoProyecto(Runnable alNuevoProyecto) {
+        this.alNuevoProyecto = alNuevoProyecto;
+    }
+
+    public void actualizarPrincipal(Path ruta, String problema) {
+        Path anterior = rutaPrincipal;
+        rutaPrincipal = ruta;
+        estadoPrincipal.setText(ruta != null ? "Principal: " + ruta.getFileName() : "Principal: revisar proyecto");
+        estadoPrincipal.setToolTipText(problema != null ? problema : ruta != null ? ruta.toString() : null);
+        if (!java.util.Objects.equals(anterior, ruta)
+            && modeloArbol.getRoot() instanceof DefaultMutableTreeNode raiz) {
+            for (Enumeration<?> e = raiz.depthFirstEnumeration(); e.hasMoreElements(); ) {
+                DefaultMutableTreeNode nodo = (DefaultMutableTreeNode) e.nextElement();
+                if (nodo.getUserObject() instanceof EntradaArchivo entrada
+                    && (entrada.ruta().equals(anterior) || entrada.ruta().equals(ruta))) {
+                    modeloArbol.nodeChanged(nodo);
+                }
+            }
+        }
+        arbol.repaint();
     }
 
     public void alRenombrar(Consumer<Path> alRenombrar) {
@@ -210,6 +256,9 @@ public class FileTreePanel extends JPanel {
         } else {
             Path carpeta = objeto instanceof EntradaCarpeta entrada ? entrada.ruta() : carpetaProyecto;
             menu.add(crearItem("Nuevo archivo aquí", () -> alNuevoArchivo.accept(carpeta)));
+            if (alNuevoProyecto != null) {
+                menu.add(crearItem("Nuevo proyecto...", alNuevoProyecto));
+            }
         }
         menu.addPopupMenuListener(new PopupMenuListener() {
             @Override
@@ -241,6 +290,10 @@ public class FileTreePanel extends JPanel {
 
     public void cargarProyecto(Proyecto proyecto) {
         carpetaProyecto = proyecto.getCarpeta();
+        ArchivoDobby principal = proyecto.getArchivoPrincipal();
+        actualizarPrincipal(principal != null ? principal.getRuta() : null,
+            principal != null ? null : estadoPrincipal.getToolTipText());
+        estadoPrincipal.setVisible(true);
         DefaultMutableTreeNode raiz = new DefaultMutableTreeNode(proyecto.getNombre());
         Map<Path, DefaultMutableTreeNode> carpetas = new HashMap<>();
         carpetas.put(proyecto.getCarpeta(), raiz);
@@ -322,6 +375,9 @@ public class FileTreePanel extends JPanel {
 
     public void limpiar() {
         carpetaProyecto = null;
+        rutaPrincipal = null;
+        estadoPrincipal.setVisible(false);
+        estadoPrincipal.setToolTipText(null);
         modeloArbol.setRoot(new DefaultMutableTreeNode("Sin proyecto abierto"));
         modeloArbol.reload();
         cartas.show(contenido, CARTA_VACIA);

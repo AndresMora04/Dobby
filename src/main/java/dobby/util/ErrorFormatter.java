@@ -44,6 +44,9 @@ public final class ErrorFormatter {
 
     private static String sugerencia(String tipo, String descripcion) {
         String mensaje = descripcion.toLowerCase(Locale.ROOT);
+        if ("Error de proyecto".equals(tipo)) {
+            return "Revisa la carpeta del proyecto: debe existir un unico bloque Hogwarts() entre sus archivos .dobby.";
+        }
         if ("Error de sintaxis".equals(tipo)) {
             return "Revisa la escritura, los parentesis, las llaves y los puntos y comas cerca de esa linea.";
         }

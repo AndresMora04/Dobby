@@ -206,6 +206,36 @@ Hogwarts() {
 | Gringotts | array/lista |
 | Varita | struct |
 
+## Proyectos y archivo principal
+
+- **Archivo > Nuevo proyecto...** crea una carpeta nueva con un
+  `principal.dobby` ejecutable. No sobrescribe carpetas existentes.
+- **Archivo > Abrir carpeta...** abre un proyecto existente.
+- El punto de entrada es el archivo que declara `Hogwarts()`, sin depender
+  de su nombre. El árbol lo identifica con `(principal)`.
+- Debe existir un único bloque `Hogwarts()` entre los archivos `.dobby`
+  del proyecto, incluidas las subcarpetas visibles. Las carpetas cuyo nombre
+  comienza con punto se excluyen del árbol y de esta búsqueda.
+- **Compilar** y **Ejecutar** parten de ese archivo aunque esté activa una
+  pestaña auxiliar. Se revisa la sintaxis de los archivos del proyecto y
+  se enlaza el principal con sus dependencias; las importaciones deben
+  permanecer dentro de la carpeta del proyecto.
+- Los archivos abiertos aportan su contenido actual, incluso sin guardar.
+  Una pestaña sin ruta todavía no pertenece al proyecto.
+- Los archivos nuevos dentro del proyecto empiezan vacíos para no agregar
+  otro punto de entrada por accidente.
+- **Proyecto > Actualizar archivos** actualiza el árbol después de cambios
+  externos. La ejecución también vuelve a buscar el principal.
+- **Proyecto > Cerrar proyecto** conserva las pestañas y sus cambios;
+  sin proyecto abierto se compila o ejecuta el archivo activo.
+
+Prueba manual: crear un proyecto, agregar `operaciones.dobby` con una
+función `Expecto`, importarla desde el principal y ejecutar mientras
+`operaciones.dobby` está activo. Luego agregar un segundo `Hogwarts()`
+y comprobar que la ejecución se detiene con un error de proyecto.
+
+Pruebas automatizadas: `mvn test`.
+
 ## Menú de opciones (requisito del entorno gráfico)
 
 El entorno debe permitir consultar, sin salir de la aplicación: palabras

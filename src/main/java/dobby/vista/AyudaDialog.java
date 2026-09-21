@@ -278,6 +278,8 @@ public class AyudaDialog extends ModalDialog {
             """);
 
         temas.put("Proyectos y archivos", """
+            - Archivo > Nuevo proyecto...: elige una carpeta y un nombre.
+              Se crea una carpeta nueva con un principal.dobby listo para ejecutar.
             - Archivo > Abrir carpeta...: abre una carpeta como proyecto. El árbol
               muestra sus archivos .dobby, incluidas las subcarpetas.
             - Un click en el árbol abre el archivo en una pestaña.
@@ -288,12 +290,22 @@ public class AyudaDialog extends ModalDialog {
             - Guardar, Guardar como y Guardar todo están en el menú Archivo.
             - Al cerrar una pestaña o la ventana con cambios pendientes, se pregunta
               si se quieren guardar.
-            - Compilar revisa el archivo de la pestaña activa y sus importaciones.
-              Ejecutar lo compila y lo corre.
+            - El principal es el archivo que declara Hogwarts(), cualquiera que sea
+              su nombre. Se marca con (principal) en el árbol.
+            - El proyecto debe contener un único Hogwarts(). Si falta o hay varios,
+              Compilar y Ejecutar muestran un error.
+            - Con un proyecto abierto, Compilar y Ejecutar parten de su principal,
+              aunque la pestaña activa sea un archivo auxiliar. Se usan también los
+              cambios sin guardar de los archivos del proyecto.
+            - Los archivos nuevos del proyecto empiezan vacíos, sin otro Hogwarts().
+            - Proyecto > Actualizar archivos: vuelve a leer el árbol y el principal.
+            - Proyecto > Cerrar proyecto: conserva las pestañas y permite compilar
+              o ejecutar solamente el archivo activo.
             """);
 
         temas.put("Atajos de teclado", """
             Ctrl + N            Nuevo archivo
+            Ctrl + Shift + N    Nuevo proyecto
             Ctrl + O            Abrir archivo
             Ctrl + Shift + O    Abrir carpeta
             Ctrl + S            Guardar
