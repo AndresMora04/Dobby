@@ -12,6 +12,37 @@ public final class EjemplosDobby {
     }
 
     public static final Ejemplo[] EJEMPLOS = {
+        new Ejemplo("Arreglos (Gringotts)",
+            "Crear, modificar y recorrer un arreglo de notas.",
+            """
+            Alohomora notas: Gringotts<Entero> = [80, 90, 100];
+            notas[1] = 95;
+            Alohomora total: Entero = 0;
+            Wingardium (i = 0; i < notas.longitud; i = i + 1) {
+                Revelio notas[i];
+                total = total + notas[i];
+            }
+            Revelio "Total: " + total;
+            """),
+        new Ejemplo("Arreglos anidados",
+            "Un Gringotts que contiene otros arreglos.",
+            """
+            Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];
+            tabla[0][1] = 9;
+            Revelio tabla;
+            Revelio tabla[1].longitud;
+            """),
+        new Ejemplo("Funcion con arreglo",
+            "Recibe un arreglo y devuelve la suma de sus elementos. Va fuera de Hogwarts.",
+            """
+            Expecto sumarNotas(notas: Gringotts<Entero>): Entero {
+                Alohomora total: Entero = 0;
+                Wingardium (i = 0; i < notas.longitud; i = i + 1) {
+                    total = total + notas[i];
+                }
+                Patronum total;
+            }
+            """),
         new Ejemplo("Función principal (Hogwarts)",
             "Punto de entrada: todo programa empieza aquí.",
             "Hogwarts() {\n    Revelio \"Hola, mundo\";\n}\n"),

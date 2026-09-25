@@ -41,6 +41,11 @@ public class Lexer {
             case '(':
                 agregarToken(TipoToken.SIMBOLO, "(");
                 break;
+            case '[':
+            case ']':
+            case '.':
+                agregarToken(TipoToken.SIMBOLO, String.valueOf(c));
+                break;
             case ')':
                 agregarToken(TipoToken.SIMBOLO, ")");
                 break;

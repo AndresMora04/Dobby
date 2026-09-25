@@ -53,6 +53,12 @@ public final class ErrorFormatter {
         if ("Error de importacion".equals(tipo)) {
             return "Revisa la ruta de Floo, la funcion importada y las dependencias entre archivos.";
         }
+        if (mensaje.contains("indice") || mensaje.contains("fuera de rango")) {
+            return "Usa un indice Entero entre 0 y arreglo.longitud - 1; un arreglo vacio no tiene posiciones.";
+        }
+        if (mensaje.contains("gringotts") && mensaje.contains("no ha sido inicializado")) {
+            return "Asigna un arreglo, por ejemplo [10, 20], antes de consultar su longitud o sus posiciones.";
+        }
         if (mensaje.contains("no ha sido declarada")) {
             return "Declara la variable con Alohomora antes de usarla en ese camino del programa.";
         }

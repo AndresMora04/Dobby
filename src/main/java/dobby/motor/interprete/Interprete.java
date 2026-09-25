@@ -1,6 +1,10 @@
 package dobby.motor.interprete;
 
 import dobby.motor.parser.Nodo;
+import dobby.motor.parser.NodoArreglo;
+import dobby.motor.parser.NodoAccesoArreglo;
+import dobby.motor.parser.NodoAsignacionArreglo;
+import dobby.motor.parser.NodoLongitud;
 import dobby.motor.parser.NodoAsignacion;
 import dobby.motor.parser.NodoContinuar;
 import dobby.motor.parser.NodoDeclaracionVariable;
@@ -128,6 +132,9 @@ public class Interprete {
     }
 
     private String inferirTipo(Object valor) {
+        if (valor instanceof ValorArreglo arreglo) {
+            return "Gringotts<" + arreglo.getTipoElemento() + ">";
+        }
         if (valor instanceof Integer) {
             return "Entero";
         }
@@ -156,6 +163,14 @@ public class Interprete {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
                 String tipoDeclarado = entorno.obtenerTipo(n.getNombreVariable());
                 entorno.asignar(n.getNombreVariable(), coercionar(valor, tipoDeclarado, n.getLinea()), n.getLinea());
+            }
+            case NodoAsignacionArreglo n -> {
+                NodoAccesoArreglo destino = n.getDestino();
+                ValorArreglo arreglo = obtenerArreglo(destino.getArreglo(), entorno, destino.getLinea());
+                int indice = evaluarIndice(destino.getIndice(), entorno);
+                arreglo.validarIndice(indice, destino.getLinea());
+                Object valor = evaluarExpresion(n.getExpresion(), entorno);
+                arreglo.asignar(indice, coercionar(valor, arreglo.getTipoElemento(), n.getLinea()), n.getLinea());
             }
             case NodoImpresion n -> {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
@@ -205,6 +220,12 @@ public class Interprete {
         return switch (nodo) {
             case NodoLiteral n -> n.getValor();
             case NodoVariable n -> entorno.obtener(n.getNombre(), n.getLinea());
+            case NodoArreglo n -> evaluarArreglo(n, entorno);
+            case NodoAccesoArreglo n -> {
+                ValorArreglo arreglo = obtenerArreglo(n.getArreglo(), entorno, n.getLinea());
+                yield arreglo.obtener(evaluarIndice(n.getIndice(), entorno), n.getLinea());
+            }
+            case NodoLongitud n -> obtenerArreglo(n.getArreglo(), entorno, n.getLinea()).longitud();
             case NodoOperacionBinaria n -> evaluarBinaria(n, entorno);
             case NodoOperacionUnaria n -> evaluarUnaria(n, entorno);
             case NodoEntrada n -> proveedorEntrada.leer("Ingrese un valor:");
@@ -223,6 +244,32 @@ public class Interprete {
             argumentos.add(evaluarExpresion(argumento, entorno));
         }
         return invocarFuncion(funcion, argumentos);
+    }
+
+    private ValorArreglo evaluarArreglo(NodoArreglo nodo, Entorno entorno) {
+        List<Object> elementos = new ArrayList<>();
+        for (Nodo elemento : nodo.getElementos()) {
+            Object valor = evaluarExpresion(elemento, entorno);
+            elementos.add(coercionar(valor, nodo.getTipoElemento(), elemento.getLinea()));
+        }
+        return new ValorArreglo(nodo.getTipoElemento(), elementos);
+    }
+
+    private ValorArreglo obtenerArreglo(Nodo expresion, Entorno entorno, int linea) {
+        Object valor = evaluarExpresion(expresion, entorno);
+        if (!(valor instanceof ValorArreglo arreglo)) {
+            throw new ErrorEjecucion(valor == null ? "El arreglo Gringotts no ha sido inicializado"
+                : "Se esperaba un arreglo Gringotts", linea);
+        }
+        return arreglo;
+    }
+
+    private int evaluarIndice(Nodo expresion, Entorno entorno) {
+        Object valor = evaluarExpresion(expresion, entorno);
+        if (!(valor instanceof Integer indice)) {
+            throw new ErrorEjecucion("El indice de Gringotts debe ser de tipo Entero", expresion.getLinea());
+        }
+        return indice;
     }
 
     private Object evaluarUnaria(NodoOperacionUnaria nodo, Entorno entorno) {
@@ -334,6 +381,13 @@ public class Interprete {
         if (valor == null && tipoDeclarado != null && !tipoDeclarado.equals("Obliviate")) {
             throw new ErrorEjecucion("No se recibio un valor de tipo " + tipoDeclarado, linea);
         }
+        if (tipoDeclarado != null && tipoDeclarado.startsWith("Gringotts<")) {
+            String elemento = tipoDeclarado.substring(10, tipoDeclarado.length() - 1);
+            if (!(valor instanceof ValorArreglo arreglo) || !elemento.equals(arreglo.getTipoElemento())) {
+                throw new ErrorEjecucion("Se esperaba un arreglo de tipo " + tipoDeclarado, linea);
+            }
+            return valor;
+        }
         if ("Decimal".equals(tipoDeclarado) && valor instanceof Number numero) {
             return numero.doubleValue();
         }
@@ -364,6 +418,13 @@ public class Interprete {
     }
 
     private String convertirATexto(Object valor) {
+        if (valor instanceof ValorArreglo arreglo) {
+            List<String> textos = new ArrayList<>();
+            for (int i = 0; i < arreglo.longitud(); i++) {
+                textos.add(convertirATexto(arreglo.obtener(i, 0)));
+            }
+            return "[" + String.join(", ", textos) + "]";
+        }
         if (valor == null) {
             return "Obliviate";
         }

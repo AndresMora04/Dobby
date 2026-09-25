@@ -98,6 +98,17 @@ class ProyectoControladorTest {
     }
 
     @Test
+    void ejecutaFuncionImportadaQueRetornaUnArreglo() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            vista.getPanelEditor().setTexto("Expecto valor(): Gringotts<Entero> { Patronum [2,4,6]; }");
+            controlador.manejarEjecutar();
+            assertTrue(flujo.getUltimoResultado().isExito());
+            assertEquals("[2, 4, 6]", flujo.getUltimoResultado().getSalida().trim());
+            assertEquals("operaciones.dobby", flujo.getArchivoActivo().getNombre());
+        });
+    }
+
+    @Test
     void bloqueaEjecucionSiSeAgregaOtroPrincipalSinGuardar() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             vista.getPanelEditor().setTexto("Expecto valor(): Entero { Patronum 5; } Hogwarts() {}");

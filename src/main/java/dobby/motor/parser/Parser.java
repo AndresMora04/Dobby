@@ -13,7 +13,7 @@ public class Parser {
     private int posicion;
 
     public NodoPrograma parsear(List<Token> tokens) {
-        this.tokens = tokens;
+        this.tokens = new ArrayList<>(tokens);
         this.posicion = 0;
 
         List<Nodo> sentencias = new ArrayList<>();
@@ -112,7 +112,7 @@ public class Parser {
     }
 
     private Nodo sentencia() {
-        if (verificar("Alohomora")) {
+        if (verificar("Alohomora") || verificar("Gringotts")) {
             return declaracionVariable();
         }
         if (verificar("Revelio")) {
@@ -147,39 +147,53 @@ public class Parser {
 
     private NodoDeclaracionVariable declaracionVariable() {
         int linea = actual().getLinea();
-        consumir("Alohomora");
-        String nombre = consumirIdentificador();
-        consumir(":");
-        String tipoVariable = tipo();
+        String nombre;
+        String tipoVariable;
+        if (coincide("Alohomora")) {
+            nombre = consumirIdentificador();
+            consumir(":");
+            tipoVariable = tipo();
+        } else {
+            tipoVariable = tipo();
+            nombre = consumirIdentificador();
+        }
+        Nodo valorInicial = coincide("=") ? expresion() : null;
         consumir(";");
 
         NodoDeclaracionVariable nodo = new NodoDeclaracionVariable();
         nodo.setNombre(nombre);
         nodo.setTipo(tipoVariable);
+        nodo.setValorInicial(valorInicial);
         nodo.setLinea(linea);
         return nodo;
     }
 
-    private NodoAsignacion asignacion() {
-        int linea = actual().getLinea();
-        String nombre = consumirIdentificador();
-        consumir("=");
-        Nodo expresion = expresion();
+    private Nodo asignacion() {
+        Nodo nodo = asignacionSinPuntoYComa();
         consumir(";");
-
-        NodoAsignacion nodo = new NodoAsignacion();
-        nodo.setNombreVariable(nombre);
-        nodo.setExpresion(expresion);
-        nodo.setLinea(linea);
         return nodo;
     }
 
-    private NodoAsignacion asignacionSinPuntoYComa() {
+    private Nodo asignacionSinPuntoYComa() {
         int linea = actual().getLinea();
         String nombre = consumirIdentificador();
+        NodoVariable variable = new NodoVariable();
+        variable.setNombre(nombre);
+        variable.setLinea(linea);
+        Nodo destino = variable;
+        while (verificar("[")) {
+            destino = accesoArreglo(destino);
+        }
         consumir("=");
         Nodo expresion = expresion();
 
+        if (destino instanceof NodoAccesoArreglo acceso) {
+            NodoAsignacionArreglo nodo = new NodoAsignacionArreglo();
+            nodo.setDestino(acceso);
+            nodo.setExpresion(expresion);
+            nodo.setLinea(linea);
+            return nodo;
+        }
         NodoAsignacion nodo = new NodoAsignacion();
         nodo.setNombreVariable(nombre);
         nodo.setExpresion(expresion);
@@ -385,7 +399,53 @@ public class Parser {
             nodo.setLinea(operadorToken.getLinea());
             return nodo;
         }
-        return primario();
+        return postfijo();
+    }
+
+    private Nodo postfijo() {
+        Nodo nodo = primario();
+        while (verificar("[") || verificar(".")) {
+            if (verificar("[")) {
+                nodo = accesoArreglo(nodo);
+            } else {
+                int linea = actual().getLinea();
+                consumir(".");
+                consumir("longitud");
+                NodoLongitud longitud = new NodoLongitud();
+                longitud.setArreglo(nodo);
+                longitud.setLinea(linea);
+                nodo = longitud;
+            }
+        }
+        return nodo;
+    }
+
+    private NodoAccesoArreglo accesoArreglo(Nodo arreglo) {
+        int linea = actual().getLinea();
+        consumir("[");
+        Nodo indice = expresion();
+        consumir("]");
+        NodoAccesoArreglo nodo = new NodoAccesoArreglo();
+        nodo.setArreglo(arreglo);
+        nodo.setIndice(indice);
+        nodo.setLinea(linea);
+        return nodo;
+    }
+
+    private NodoArreglo literalArreglo() {
+        int linea = actual().getLinea();
+        consumir("[");
+        List<Nodo> elementos = new ArrayList<>();
+        if (!verificar("]")) {
+            do {
+                elementos.add(expresion());
+            } while (coincide(","));
+        }
+        consumir("]");
+        NodoArreglo nodo = new NodoArreglo();
+        nodo.setElementos(elementos);
+        nodo.setLinea(linea);
+        return nodo;
     }
 
     private Nodo combinar(Nodo izquierda, String operador, Nodo derecha) {
@@ -399,6 +459,9 @@ public class Parser {
 
     private Nodo primario() {
         Token t = actual();
+        if (verificar("[")) {
+            return literalArreglo();
+        }
 
         if (t.getTipo() == TipoToken.NUMERO) {
             avanzar();
@@ -476,7 +539,12 @@ public class Parser {
         String texto = t.getValor();
         if (coincide("<")) {
             String interno = tipo();
-            consumir(">");
+            // En declaraciones sin espacios, el cierre puede venir unido a la asignacion.
+            if (verificar(">=")) {
+                tokens.set(posicion, new Token(TipoToken.SIMBOLO, "=", actual().getLinea()));
+            } else {
+                consumir(">");
+            }
             return texto + "<" + interno + ">";
         }
         return texto;

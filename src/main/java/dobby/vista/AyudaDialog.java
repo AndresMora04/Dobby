@@ -90,7 +90,7 @@ public class AyudaDialog extends ModalDialog {
             Floo        -> importar una función de otro archivo
             desde       -> acompaña a Floo
             Obliviate   -> tipo y valor nulo
-            Gringotts   -> arreglo (en desarrollo)
+            Gringotts   -> arreglo de elementos del mismo tipo
             Varita      -> struct (en desarrollo)
             """);
 
@@ -182,14 +182,54 @@ public class AyudaDialog extends ModalDialog {
 
             Revelio muestra los Booleanos como Lumos / Nox y el nulo como Obliviate.
 
-            Compuestos (todavía en desarrollo):
-              Gringotts   arreglo
-              Varita      struct
+            Compuestos:
+              Gringotts   arreglo (implementado)
+              Varita      struct (todavía en desarrollo)
+            """);
+
+        temas.put("Arreglos (Gringotts)", """
+            Declaración e inicialización:
+                Alohomora notas: Gringotts<Entero> = [80, 90, 100];
+            También se permite:
+                Gringotts<Entero> notas = [80, 90, 100];
+
+            Consultar, modificar y obtener el tamaño:
+                Revelio notas[0];
+                notas[1] = 95;
+                Revelio notas.longitud;
+
+            Recorrer:
+                Wingardium (i = 0; i < notas.longitud; i = i + 1) {
+                    Revelio notas[i];
+                }
+
+            - Los índices son Entero y empiezan en cero.
+            - Cada arreglo mantiene su tamaño. longitud es de solo lectura.
+            - [] crea un arreglo vacío. Una variable declarada sin valor debe
+              inicializarse antes de consultar posiciones o longitud.
+            - Los elementos deben respetar el tipo declarado. Decimal admite
+              elementos Entero y Texto admite Caracter.
+            - Los índices negativos o mayores o iguales a longitud producen un
+              error de ejecución con archivo y línea.
+            - Se pueden recibir y retornar arreglos en funciones, incluidas las
+              importadas con Floo.
+            - Asignar un arreglo a otra variable o pasarlo a una función comparte
+              el mismo arreglo. Modificar una posición afecta a ambas referencias.
+            - Asignar un nuevo literal, como notas = [70, 80], reemplaza solamente
+              la referencia de esa variable. No cambia el arreglo anterior.
+            - == y != comparan referencias, no el contenido de los arreglos.
+            - No hay operaciones para agregar o eliminar posiciones.
+
+            Arreglos anidados:
+                Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];
+                tabla[0][1] = 9;
+                Revelio tabla[1].longitud;
             """);
 
         temas.put("Semántica", """
             - Todo programa inicia con Hogwarts() { }.
-            - Toda variable debe declararse con Alohomora antes de usarse.
+            - Toda variable debe declararse antes de usarse, con Alohomora
+              o con la forma Gringotts<Tipo> nombre para arreglos.
             - Una variable no puede declararse dos veces en la misma función.
             - No se puede llamar una función que no esté declarada con Expecto
               en el archivo o importada con Floo.

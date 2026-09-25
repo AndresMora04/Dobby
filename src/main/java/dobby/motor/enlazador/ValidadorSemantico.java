@@ -1,6 +1,10 @@
 package dobby.motor.enlazador;
 
 import dobby.motor.parser.Nodo;
+import dobby.motor.parser.NodoArreglo;
+import dobby.motor.parser.NodoAccesoArreglo;
+import dobby.motor.parser.NodoAsignacionArreglo;
+import dobby.motor.parser.NodoLongitud;
 import dobby.motor.parser.NodoAsignacion;
 import dobby.motor.parser.NodoContinuar;
 import dobby.motor.parser.NodoDeclaracionVariable;
@@ -68,20 +72,22 @@ public class ValidadorSemantico {
                     throw error("La variable '" + n.getNombre() + "' ya habia sido declarada", n.getLinea());
                 }
                 if (n.getValorInicial() != null) {
-                    comprobarTipo(n.getTipo(), tipoDe(n.getValorInicial(), variables), n.getLinea());
+                    validarValor(n.getTipo(), n.getValorInicial(), variables);
                 }
                 variables.put(n.getNombre(), n.getTipo());
                 declaracionesPosibles.add(n.getNombre());
             }
-            case NodoAsignacion n -> comprobarTipo(tipoVariable(n.getNombreVariable(), variables, n.getLinea()),
-                tipoDe(n.getExpresion(), variables), n.getLinea());
+            case NodoAsignacion n -> validarValor(tipoVariable(n.getNombreVariable(), variables, n.getLinea()),
+                n.getExpresion(), variables);
+            case NodoAsignacionArreglo n -> validarValor(tipoDe(n.getDestino(), variables),
+                n.getExpresion(), variables);
             case NodoImpresion n -> tipoDe(n.getExpresion(), variables);
             case NodoLlamada n -> tipoDe(n, variables);
             case NodoRetorno n -> {
                 if (funcion.isEsPrincipal()) {
                     throw error("Hogwarts() no puede usar Patronum", n.getLinea());
                 }
-                comprobarTipo(funcion.getTipoRetorno(), tipoDe(n.getExpresion(), variables), n.getLinea());
+                validarValor(funcion.getTipoRetorno(), n.getExpresion(), variables);
             }
             case NodoSi n -> {
                 comprobarBooleano(tipoDe(n.getCondicion(), variables), n.getLinea());
@@ -106,8 +112,8 @@ public class ValidadorSemantico {
                 validarBloque(n.getCuerpo(), new HashMap<>(variables), ciclos + 1);
             }
             case NodoPara n -> {
-                NodoAsignacion inicio = (NodoAsignacion) n.getInicializacion();
-                if (!variables.containsKey(inicio.getNombreVariable())) {
+                if (n.getInicializacion() instanceof NodoAsignacion inicio
+                    && !variables.containsKey(inicio.getNombreVariable())) {
                     if (declaracionesPosibles.contains(inicio.getNombreVariable())) {
                         throw error("La variable '" + inicio.getNombreVariable()
                             + "' no ha sido declarada en todos los caminos", inicio.getLinea());
@@ -116,7 +122,7 @@ public class ValidadorSemantico {
                     variables.put(inicio.getNombreVariable(), esTexto(tipo) ? "Texto" : tipo);
                     declaracionesPosibles.add(inicio.getNombreVariable());
                 } else {
-                    validarSentencia(inicio, variables, ciclos);
+                    validarSentencia(n.getInicializacion(), variables, ciclos);
                 }
                 comprobarBooleano(tipoDe(n.getCondicion(), variables), n.getLinea());
                 validarBloque(n.getCuerpo(), new HashMap<>(variables), ciclos + 1);
@@ -140,6 +146,18 @@ public class ValidadorSemantico {
                 yield ((String) valor).length() == 1 ? "Caracter" : "Texto";
             }
             case NodoVariable n -> tipoVariable(n.getNombre(), variables, n.getLinea());
+            case NodoArreglo n -> inferirArreglo(n, variables);
+            case NodoAccesoArreglo n -> {
+                String elemento = tipoElemento(tipoDe(n.getArreglo(), variables), n.getLinea());
+                if (!"Entero".equals(tipoDe(n.getIndice(), variables))) {
+                    throw error("El indice de Gringotts debe ser de tipo Entero", n.getLinea());
+                }
+                yield elemento;
+            }
+            case NodoLongitud n -> {
+                tipoElemento(tipoDe(n.getArreglo(), variables), n.getLinea());
+                yield "Entero";
+            }
             // Legilimens devuelve texto; la conversion ocurre al asignarlo o pasarlo como argumento.
             case NodoEntrada n -> "Entrada";
             case NodoLlamada n -> validarLlamada(n, variables);
@@ -169,6 +187,10 @@ public class ValidadorSemantico {
                 + " argumento(s) pero recibio " + llamada.getArgumentos().size(), llamada.getLinea());
         }
         for (int i = 0; i < tipos.size(); i++) {
+            if (llamada.getArgumentos().get(i) instanceof NodoArreglo && esArreglo(tipos.get(i))) {
+                validarValor(tipos.get(i), llamada.getArgumentos().get(i), variables);
+                continue;
+            }
             String recibido = tipoDe(llamada.getArgumentos().get(i), variables);
             if (!esCompatible(tipos.get(i), recibido)) {
                 throw error("El argumento " + (i + 1) + " de '" + destino.getNombre()
@@ -206,6 +228,55 @@ public class ValidadorSemantico {
             throw error("La variable '" + nombre + "' no ha sido declarada en este camino", linea);
         }
         return variables.get(nombre);
+    }
+
+    private boolean esArreglo(String tipo) {
+        return tipo != null && tipo.startsWith("Gringotts<") && tipo.endsWith(">");
+    }
+
+    private String tipoElemento(String tipo, int linea) {
+        if (!esArreglo(tipo)) {
+            throw error("Se requiere un arreglo Gringotts, pero se recibio " + tipo, linea);
+        }
+        return tipo.substring(10, tipo.length() - 1);
+    }
+
+    private void validarValor(String esperado, Nodo valor, Map<String, String> variables) {
+        if (valor instanceof NodoArreglo arreglo && esArreglo(esperado)) {
+            String elemento = tipoElemento(esperado, arreglo.getLinea());
+            arreglo.setTipoElemento(elemento);
+            for (Nodo item : arreglo.getElementos()) {
+                validarValor(elemento, item, variables);
+            }
+        } else {
+            comprobarTipo(esperado, tipoDe(valor, variables), valor != null ? valor.getLinea() : funcion.getLinea());
+        }
+    }
+
+    private String inferirArreglo(NodoArreglo arreglo, Map<String, String> variables) {
+        String tipo = null;
+        for (Nodo elemento : arreglo.getElementos()) {
+            String actual = tipoDe(elemento, variables);
+            if (actual.equals("Entrada")) {
+                actual = "Texto";
+            }
+            if (tipo == null || tipo.equals(actual)) {
+                tipo = actual;
+            } else if ((tipo.equals("Entero") || tipo.equals("Decimal"))
+                && (actual.equals("Entero") || actual.equals("Decimal"))) {
+                tipo = "Decimal";
+            } else if (esTexto(tipo) && esTexto(actual)) {
+                tipo = "Texto";
+            } else {
+                throw error("Los elementos de Gringotts deben tener tipos compatibles: "
+                    + tipo + " y " + actual, elemento.getLinea());
+            }
+        }
+        if (tipo == null) {
+            tipo = "Obliviate";
+        }
+        arreglo.setTipoElemento(tipo);
+        return "Gringotts<" + tipo + ">";
     }
 
     private void comprobarTipo(String esperado, String recibido, int linea) {

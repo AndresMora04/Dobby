@@ -173,7 +173,8 @@ Hogwarts() {
 ## Semántica
 
 - Todo programa inicia con el bloque `Hogwarts() { }`, la función principal.
-- Toda variable debe declararse con `Alohomora` antes de usarse.
+- Toda variable debe declararse antes de usarse, con `Alohomora` o con
+  la forma abreviada `Gringotts<Tipo> nombre;` para arreglos.
 - Toda función `Expecto` que no sea de tipo `Obliviate` (vacío) debe incluir
   un `Patronum` antes de cerrar su cuerpo.
 - Los bloques de código se delimitan con llaves `{ }`; la indentación no es
@@ -203,8 +204,48 @@ Hogwarts() {
 
 | Tipo Dobby | Equivalente |
 |---|---|
-| Gringotts | array/lista |
+| Gringotts | arreglo de tamaño fijo |
 | Varita | struct |
+
+### Arreglos Gringotts
+
+`Gringotts` ya permite crear, consultar, modificar y recorrer arreglos,
+además de recibirlos o retornarlos en funciones e importaciones.
+
+```text
+Hogwarts() {
+    Alohomora notas: Gringotts<Entero> = [80, 90, 100];
+    notas[1] = 95;
+    Alohomora total: Entero = 0;
+    Wingardium (i = 0; i < notas.longitud; i = i + 1) {
+        total = total + notas[i];
+    }
+    Revelio notas;
+    Revelio total;
+}
+```
+
+Salida: `[80, 95, 100]` y `275`.
+
+- También se acepta `Gringotts<Entero> notas = [80, 90, 100];`.
+- Los índices son enteros desde cero hasta `longitud - 1`.
+  `longitud` es de solo lectura. Un índice fuera de rango se reporta al ejecutar.
+- `[]` crea un arreglo vacío. Si se declara sin inicializar, consultar
+  sus elementos o su longitud produce un error de ejecución.
+- Todos los elementos respetan el tipo declarado; al crear un literal,
+  `Decimal` admite enteros y `Texto` admite caracteres.
+- Los arreglos ya creados requieren tipos idénticos para asignaciones y
+  parámetros. Un `Gringotts<Entero>` no se convierte a `Gringotts<Decimal>`.
+- Las asignaciones y los parámetros comparten referencias: cambiar una
+  posición desde una función también cambia el arreglo del llamador.
+  Asignar otro literal reemplaza la referencia, sin modificar el arreglo anterior.
+- El tamaño de cada arreglo es fijo; no se agregan ni eliminan posiciones.
+  `==` y `!=` comparan referencias. No se admite aritmética entre arreglos.
+- Se admiten arreglos anidados: `Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];`,
+  con acceso como `tabla[0][1]`. `Varita` permanece pendiente.
+
+Los ejemplos del editor incluyen arreglos, recorridos y una función que suma
+sus elementos. Las pruebas están en `GringottsTest` y se ejecutan con `mvn test`.
 
 ## Proyectos y archivo principal
 
@@ -383,9 +424,10 @@ Dobby/
 
 ## Estado actual
 
-Esqueleto del proyecto: estructura de paquetes y clases con firmas de
-métodos (sin comentarios, por preferencia del equipo). El esqueleto ya
-incluye un nodo de AST por cada construcción de la tabla de palabras
-reservadas. `PalabrasReservadas.java` todavía no tiene cargado el mapa de
-palabras (pendiente, es lógica). La lógica de tokenización, parseo e
-interpretación aún no está implementada.
+El proyecto incluye lexer, parser, intérprete, validación semántica,
+importaciones y gestión de proyectos con detección del archivo principal.
+`Gringotts` está implementado con acceso por índice, modificación,
+longitud, funciones y pruebas automatizadas.
+
+Siguen pendientes las estructuras `Varita` y la lectura de voz, además
+de los demás ajustes de la entrega final.
