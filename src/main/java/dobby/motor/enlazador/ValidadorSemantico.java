@@ -5,6 +5,10 @@ import dobby.motor.parser.NodoArreglo;
 import dobby.motor.parser.NodoAccesoArreglo;
 import dobby.motor.parser.NodoAsignacionArreglo;
 import dobby.motor.parser.NodoLongitud;
+import dobby.motor.parser.NodoEstructura;
+import dobby.motor.parser.NodoCreacionEstructura;
+import dobby.motor.parser.NodoAccesoCampo;
+import dobby.motor.parser.NodoAsignacionCampo;
 import dobby.motor.parser.NodoAsignacion;
 import dobby.motor.parser.NodoContinuar;
 import dobby.motor.parser.NodoDeclaracionVariable;
@@ -30,11 +34,16 @@ import java.util.Map;
 import java.util.Set;
 
 public class ValidadorSemantico {
+    private static final String TIPO_ENTRADA = "<entrada>";
     private NodoFuncion funcion;
+    private Map<String, NodoEstructura> estructuras = Map.of();
+    private String archivo;
     private final Set<String> declaracionesPosibles = new HashSet<>();
 
     public void validar(NodoFuncion funcion) {
         this.funcion = funcion;
+        this.estructuras = funcion.getEstructuras();
+        this.archivo = funcion.getArchivo();
         declaracionesPosibles.clear();
         declaracionesPosibles.addAll(funcion.getParametros().keySet());
         if (funcion.isEsPrincipal() && !funcion.getParametros().isEmpty()) {
@@ -53,6 +62,17 @@ public class ValidadorSemantico {
             throw error("La funcion '" + funcion.getNombre()
                 + "' debe retornar " + funcion.getTipoRetorno() + " con Patronum en todos sus caminos",
                 funcion.getLinea());
+        }
+    }
+
+    public void validarEstructuras(Map<String, NodoEstructura> propias,
+                                  Map<String, NodoEstructura> disponibles, String archivo) {
+        this.estructuras = disponibles;
+        this.archivo = archivo;
+        for (NodoEstructura estructura : propias.values()) {
+            for (var campo : estructura.getCampos().entrySet()) {
+                validarTipo(campo.getValue(), estructura.getLineasCampos().getOrDefault(campo.getKey(), estructura.getLinea()));
+            }
         }
     }
 
@@ -81,6 +101,13 @@ public class ValidadorSemantico {
                 n.getExpresion(), variables);
             case NodoAsignacionArreglo n -> validarValor(tipoDe(n.getDestino(), variables),
                 n.getExpresion(), variables);
+            case NodoAsignacionCampo n -> {
+                String tipo = tipoDe(n.getDestino(), variables);
+                if (n.getDestino().isLongitudArreglo()) {
+                    throw error("La longitud de Gringotts es de solo lectura", n.getDestino().getLinea());
+                }
+                validarValor(tipo, n.getExpresion(), variables);
+            }
             case NodoImpresion n -> tipoDe(n.getExpresion(), variables);
             case NodoLlamada n -> tipoDe(n, variables);
             case NodoRetorno n -> {
@@ -147,6 +174,8 @@ public class ValidadorSemantico {
             }
             case NodoVariable n -> tipoVariable(n.getNombre(), variables, n.getLinea());
             case NodoArreglo n -> inferirArreglo(n, variables);
+            case NodoCreacionEstructura n -> validarCreacion(n, variables);
+            case NodoAccesoCampo n -> tipoCampo(n, variables);
             case NodoAccesoArreglo n -> {
                 String elemento = tipoElemento(tipoDe(n.getArreglo(), variables), n.getLinea());
                 if (!"Entero".equals(tipoDe(n.getIndice(), variables))) {
@@ -159,7 +188,7 @@ public class ValidadorSemantico {
                 yield "Entero";
             }
             // Legilimens devuelve texto; la conversion ocurre al asignarlo o pasarlo como argumento.
-            case NodoEntrada n -> "Entrada";
+            case NodoEntrada n -> TIPO_ENTRADA;
             case NodoLlamada n -> validarLlamada(n, variables);
             case NodoOperacionUnaria n -> {
                 String tipo = tipoDe(n.getOperando(), variables);
@@ -198,6 +227,47 @@ public class ValidadorSemantico {
             }
         }
         return destino.getTipoRetorno();
+    }
+
+    private String validarCreacion(NodoCreacionEstructura nodo, Map<String, String> variables) {
+        NodoEstructura estructura = estructuras.get(nodo.getNombre());
+        if (estructura == null) {
+            throw error("Estructura Varita desconocida: " + nodo.getNombre(), nodo.getLinea());
+        }
+        for (var campo : nodo.getCampos().entrySet()) {
+            String tipo = estructura.getCampos().get(campo.getKey());
+            if (tipo == null) {
+                throw error("La estructura '" + nodo.getNombre() + "' no tiene el campo '"
+                    + campo.getKey() + "'", campo.getValue().getLinea());
+            }
+            validarValor(tipo, campo.getValue(), variables);
+        }
+        for (String campo : estructura.getCampos().keySet()) {
+            if (!nodo.getCampos().containsKey(campo)) {
+                throw error("Falta el campo '" + campo + "' al crear " + nodo.getNombre(), nodo.getLinea());
+            }
+        }
+        nodo.setDefinicion(estructura);
+        return estructura.getNombre();
+    }
+
+    private String tipoCampo(NodoAccesoCampo nodo, Map<String, String> variables) {
+        String tipo = tipoDe(nodo.getEstructura(), variables);
+        nodo.setLongitudArreglo(false);
+        if (esArreglo(tipo) && nodo.getCampo().equals("longitud")) {
+            nodo.setLongitudArreglo(true);
+            return "Entero";
+        }
+        NodoEstructura estructura = estructuras.get(tipo);
+        if (estructura == null) {
+            throw error("Se requiere un arreglo Gringotts para longitud o una estructura Varita para acceder al campo '"
+                + nodo.getCampo() + "', pero se recibio " + tipo, nodo.getLinea());
+        }
+        String campo = estructura.getCampos().get(nodo.getCampo());
+        if (campo == null) {
+            throw error("La estructura '" + tipo + "' no tiene el campo '" + nodo.getCampo() + "'", nodo.getLinea());
+        }
+        return campo;
     }
 
     private String validarOperacion(NodoOperacionBinaria n, Map<String, String> variables) {
@@ -257,7 +327,7 @@ public class ValidadorSemantico {
         String tipo = null;
         for (Nodo elemento : arreglo.getElementos()) {
             String actual = tipoDe(elemento, variables);
-            if (actual.equals("Entrada")) {
+            if (actual.equals(TIPO_ENTRADA)) {
                 actual = "Texto";
             }
             if (tipo == null || tipo.equals(actual)) {
@@ -289,11 +359,11 @@ public class ValidadorSemantico {
         return esperado.equals(recibido)
             || esperado.equals("Decimal") && recibido.equals("Entero")
             || esperado.equals("Texto") && recibido.equals("Caracter")
-            || recibido.equals("Entrada") && List.of("Entero", "Decimal", "Texto", "Caracter", "Booleano").contains(esperado);
+            || recibido.equals(TIPO_ENTRADA) && List.of("Entero", "Decimal", "Texto", "Caracter", "Booleano").contains(esperado);
     }
 
     private boolean esTexto(String tipo) {
-        return tipo.equals("Texto") || tipo.equals("Caracter") || tipo.equals("Entrada");
+        return tipo.equals("Texto") || tipo.equals("Caracter") || tipo.equals(TIPO_ENTRADA);
     }
 
     private void comprobarNumero(String tipo, int linea) {
@@ -309,7 +379,8 @@ public class ValidadorSemantico {
     }
 
     private void validarTipo(String tipo, int linea) {
-        if (tipo != null && List.of("Entero", "Decimal", "Booleano", "Texto", "Caracter", "Obliviate", "Varita").contains(tipo)) {
+        if (tipo != null && (List.of("Entero", "Decimal", "Booleano", "Texto", "Caracter", "Obliviate").contains(tipo)
+            || estructuras.containsKey(tipo))) {
             return;
         }
         if (tipo != null && tipo.startsWith("Gringotts<") && tipo.endsWith(">")) {
@@ -336,7 +407,6 @@ public class ValidadorSemantico {
     }
 
     private ErrorEnlace error(String mensaje, int linea) {
-        String archivo = funcion.getArchivo();
         return new ErrorEnlace((archivo != null ? "[" + archivo + "] " : "")
             + mensaje + " (linea " + linea + ")");
     }

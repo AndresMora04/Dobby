@@ -12,6 +12,29 @@ public final class EjemplosDobby {
     }
 
     public static final Ejemplo[] EJEMPLOS = {
+        new Ejemplo("Estructuras (Varita)",
+            "Programa completo con campos, arreglos y una funcion. Va en un archivo vacio.",
+            """
+            Varita Alumno {
+                nombre: Texto;
+                nota: Decimal;
+            }
+
+            Expecto subirNota(alumno: Alumno, puntos: Decimal): Obliviate {
+                alumno.nota = alumno.nota + puntos;
+            }
+
+            Hogwarts() {
+                Gringotts<Alumno> alumnos = [
+                    Alumno {nombre: "Harry", nota: 80},
+                    Alumno {nombre: "Hermione", nota: 95}
+                ];
+                Accio subirNota(alumnos[0], 5);
+                Wingardium (i = 0; i < alumnos.longitud; i = i + 1) {
+                    Revelio alumnos[i].nombre + ": " + alumnos[i].nota;
+                }
+            }
+            """),
         new Ejemplo("Arreglos (Gringotts)",
             "Crear, modificar y recorrer un arreglo de notas.",
             """

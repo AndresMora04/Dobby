@@ -27,6 +27,9 @@ public class Parser {
     }
 
     private Nodo declaracionSuperior() {
+        if (verificar("Varita")) {
+            return declaracionEstructura();
+        }
         if (verificar("Floo")) {
             return declaracionImportacion();
         }
@@ -36,7 +39,33 @@ public class Parser {
         if (verificar("Hogwarts")) {
             return declaracionFuncion(true);
         }
-        throw error("Se esperaba una importacion o una declaracion de funcion");
+        throw error("Se esperaba una importacion, una funcion o una estructura Varita");
+    }
+
+    private NodoEstructura declaracionEstructura() {
+        int linea = consumir("Varita").getLinea();
+        String nombre = consumirIdentificador();
+        Map<String, String> campos = new LinkedHashMap<>();
+        Map<String, Integer> lineasCampos = new LinkedHashMap<>();
+        consumir("{");
+        while (!verificar("}") && !finDeTokens()) {
+            int lineaCampo = actual().getLinea();
+            String campo = consumirIdentificador();
+            if (campos.containsKey(campo)) {
+                throw error("El campo '" + campo + "' esta declarado mas de una vez");
+            }
+            consumir(":");
+            campos.put(campo, tipo());
+            lineasCampos.put(campo, lineaCampo);
+            consumir(";");
+        }
+        consumir("}");
+        NodoEstructura nodo = new NodoEstructura();
+        nodo.setNombre(nombre);
+        nodo.setCampos(campos);
+        nodo.setLineasCampos(lineasCampos);
+        nodo.setLinea(linea);
+        return nodo;
     }
 
     private NodoImportacion declaracionImportacion() {
@@ -180,15 +209,19 @@ public class Parser {
         NodoVariable variable = new NodoVariable();
         variable.setNombre(nombre);
         variable.setLinea(linea);
-        Nodo destino = variable;
-        while (verificar("[")) {
-            destino = accesoArreglo(destino);
-        }
+        Nodo destino = accesos(variable);
         consumir("=");
         Nodo expresion = expresion();
 
         if (destino instanceof NodoAccesoArreglo acceso) {
             NodoAsignacionArreglo nodo = new NodoAsignacionArreglo();
+            nodo.setDestino(acceso);
+            nodo.setExpresion(expresion);
+            nodo.setLinea(linea);
+            return nodo;
+        }
+        if (destino instanceof NodoAccesoCampo acceso) {
+            NodoAsignacionCampo nodo = new NodoAsignacionCampo();
             nodo.setDestino(acceso);
             nodo.setExpresion(expresion);
             nodo.setLinea(linea);
@@ -403,18 +436,21 @@ public class Parser {
     }
 
     private Nodo postfijo() {
-        Nodo nodo = primario();
+        return accesos(primario());
+    }
+
+    private Nodo accesos(Nodo nodo) {
         while (verificar("[") || verificar(".")) {
             if (verificar("[")) {
                 nodo = accesoArreglo(nodo);
             } else {
                 int linea = actual().getLinea();
                 consumir(".");
-                consumir("longitud");
-                NodoLongitud longitud = new NodoLongitud();
-                longitud.setArreglo(nodo);
-                longitud.setLinea(linea);
-                nodo = longitud;
+                NodoAccesoCampo campo = new NodoAccesoCampo();
+                campo.setCampo(consumirIdentificador());
+                campo.setEstructura(nodo);
+                campo.setLinea(linea);
+                nodo = campo;
             }
         }
         return nodo;
@@ -501,12 +537,36 @@ public class Parser {
         }
         if (t.getTipo() == TipoToken.IDENTIFICADOR) {
             avanzar();
+            if (verificar("{")) {
+                return creacionEstructura(t);
+            }
             NodoVariable nodo = new NodoVariable();
             nodo.setNombre(t.getValor());
             nodo.setLinea(t.getLinea());
             return nodo;
         }
         throw error("Se esperaba una expresion");
+    }
+
+    private NodoCreacionEstructura creacionEstructura(Token nombre) {
+        consumir("{");
+        Map<String, Nodo> campos = new LinkedHashMap<>();
+        if (!verificar("}")) {
+            do {
+                String campo = consumirIdentificador();
+                if (campos.containsKey(campo)) {
+                    throw error("El campo '" + campo + "' tiene mas de un valor");
+                }
+                consumir(":");
+                campos.put(campo, expresion());
+            } while (coincide(","));
+        }
+        consumir("}");
+        NodoCreacionEstructura nodo = new NodoCreacionEstructura();
+        nodo.setNombre(nombre.getValor());
+        nodo.setCampos(campos);
+        nodo.setLinea(nombre.getLinea());
+        return nodo;
     }
 
     private NodoLiteral literalNumero(Token t) {

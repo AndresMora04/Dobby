@@ -33,6 +33,26 @@ class GestorProyectoTest {
     }
 
     @Test
+    void ejecutaEstructurasImportadasConCambiosSinGuardar() throws Exception {
+        Path tipos = escribir("lib/tipos.dobby", "Varita Dato { valor: Entero; }");
+        Path entrada = escribir("inicio.dobby", """
+            Floo Dato desde "lib/tipos.dobby";
+            Hogwarts() {
+                Gringotts<Dato> datos=[Dato {valor: 7}];
+                datos[0].valor=9;
+                Revelio datos[0].valor/2;
+            }
+            """);
+        abiertos.put(tipos, "Varita Dato { valor: Decimal; }");
+        Proyecto proyecto = gestor.cargar(carpeta);
+        var resultado = new Interprete().ejecutar(gestor.enlazar(proyecto).programa());
+        assertTrue(resultado.isExito(), resultado.getErrores().toString());
+        assertEquals(entrada, proyecto.getArchivoPrincipal().getRuta());
+        assertEquals("4.5", resultado.getSalida().trim());
+        assertTrue(Files.readString(tipos).contains("Entero"));
+    }
+
+    @Test
     void creaProyectoEjecutableSinSobrescribir() throws Exception {
         Proyecto proyecto = gestor.crear(carpeta, "MiProyecto");
         assertTrue(Files.isRegularFile(proyecto.getCarpeta().resolve("principal.dobby")));

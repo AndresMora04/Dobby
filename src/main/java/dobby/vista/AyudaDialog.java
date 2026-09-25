@@ -87,11 +87,11 @@ public class AyudaDialog extends ModalDialog {
             Reparo      -> saltar a la siguiente vuelta (continue)
             Lumos / Nox -> verdadero / falso
             Hogwarts    -> función principal (main)
-            Floo        -> importar una función de otro archivo
+            Floo        -> importar una función o estructura de otro archivo
             desde       -> acompaña a Floo
             Obliviate   -> tipo y valor nulo
             Gringotts   -> arreglo de elementos del mismo tipo
-            Varita      -> struct (en desarrollo)
+            Varita      -> estructura con campos de distintos tipos
             """);
 
         temas.put("Sintaxis", """
@@ -184,7 +184,7 @@ public class AyudaDialog extends ModalDialog {
 
             Compuestos:
               Gringotts   arreglo (implementado)
-              Varita      struct (todavía en desarrollo)
+              Varita      estructura con campos (implementado)
             """);
 
         temas.put("Arreglos (Gringotts)", """
@@ -226,6 +226,43 @@ public class AyudaDialog extends ModalDialog {
                 Revelio tabla[1].longitud;
             """);
 
+        temas.put("Estructuras (Varita)", """
+            Declarar fuera de Hogwarts y de las funciones:
+                Varita Punto { x: Entero; y: Decimal; }
+
+            Crear y modificar dentro de una función:
+                Alohomora p: Punto = Punto {x: 2, y: 5};
+                p.x = 8;
+                Revelio p.x;
+                Revelio p;
+
+            - El tipo de la variable es el nombre declarado, como Punto, no Varita.
+            - Cada campo debe recibir un valor al crear la estructura. No se
+              permiten campos faltantes, repetidos, desconocidos o de otro tipo.
+            - Los campos pueden escribirse en cualquier orden. Se evalúan en
+              el orden escrito y se imprimen en el orden de la declaración.
+            - Se admiten tipos simples, otras estructuras y arreglos como campos.
+              También se permite Gringotts<Punto> y accesos como puntos[0].x.
+            - Las funciones pueden recibir y devolver estructuras.
+            - Asignar o pasar una estructura comparte la referencia. Modificar
+              un campo afecta a quienes tengan esa misma referencia.
+            - Asignar otro literal reemplaza la referencia de esa variable.
+              == y != comparan referencias, no el contenido.
+            - Una estructura sin inicializar no permite consultar ni modificar
+              campos. Debe asignarse un valor completo primero.
+            - Un campo puede llamarse longitud; la propiedad longitud de los
+              arreglos sigue siendo de solo lectura.
+            - Revelio muestra los campos. Si hay referencias circulares,
+              muestra <ciclo> en el punto donde se repite la referencia.
+
+            Importar una definición:
+                Floo Punto desde "tipos.dobby";
+
+            Floo también hace disponibles los tipos del archivo importado y sus
+            dependencias. No se pueden reunir definiciones distintas con el mismo
+            nombre: comparte una definición e impórtala desde los otros archivos.
+            """);
+
         temas.put("Semántica", """
             - Todo programa inicia con Hogwarts() { }.
             - Toda variable debe declararse antes de usarse, con Alohomora
@@ -235,14 +272,15 @@ public class AyudaDialog extends ModalDialog {
               en el archivo o importada con Floo.
             - Toda función que no sea Obliviate debe devolver un valor con Patronum.
             - Las importaciones (Floo) se validan al compilar: existencia del
-              archivo, existencia de la función, cantidad de argumentos, tipos,
+              archivo, existencia de la función o estructura, argumentos, tipos,
               declaraciones duplicadas e importaciones circulares.
             """);
 
         temas.put("Importaciones (Floo)", """
             Floo función desde "archivo.dobby";
 
-            Permite usar en este archivo una función definida en otro.
+            Permite usar una función o estructura definida en otro archivo.
+            Para una estructura: Floo Punto desde "tipos.dobby";
 
             operaciones.dobby
                 Expecto sumar(a: Entero, b: Entero): Entero {
@@ -260,11 +298,17 @@ public class AyudaDialog extends ModalDialog {
             - Va entre comillas y con la extensión .dobby.
             - La ruta es relativa a la carpeta del archivo que importa:
               "lib/operaciones.dobby" o "../otro.dobby".
-            - Una línea Floo por cada función que se quiera importar.
-            - Se ejecuta el archivo de la pestaña activa. El Hogwarts() de un
-              archivo importado se ignora.
+            - Una línea Floo por cada función o estructura que se quiera importar.
+              El nombre debe estar declarado en ese archivo, no ser otro Floo.
+            - Con proyecto abierto se ejecuta su principal; sin proyecto, el
+              archivo activo. No se puede importar Hogwarts.
             - Cada archivo ve solo sus propias funciones y las que importó. Dos
               archivos pueden tener una función con el mismo nombre sin chocar.
+            - Floo incorpora las estructuras visibles del archivo importado,
+              incluidas sus dependencias. Importar varias funciones que usan
+              una misma definición no la duplica.
+            - Dos definiciones distintas de Varita con el mismo nombre producen
+              un error al reunirlas mediante Floo.
             - Si un archivo importado está abierto con cambios sin guardar, se
               usa lo que se ve en pantalla.
             - Guarda el archivo o abre una carpeta como proyecto antes de usar

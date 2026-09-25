@@ -88,7 +88,7 @@ class EnlazadorTest {
     @MethodSource("ejemplos")
     void conservaEjemplosDelEditor(String titulo, String fragmento) {
         String codigo;
-        if (fragmento.startsWith("Hogwarts")) codigo = fragmento;
+        if (fragmento.startsWith("Hogwarts") || fragmento.startsWith("Varita")) codigo = fragmento;
         else if (fragmento.startsWith("Expecto")) codigo = fragmento + "Hogwarts() {}";
         else if (fragmento.startsWith("Floo")) codigo = fragmento + "Hogwarts() { Revelio Accio sumar(2, 3); }";
         else codigo = SUMAR + SALUDAR + "Hogwarts() {" + fragmento + "}";

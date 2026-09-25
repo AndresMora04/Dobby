@@ -11,6 +11,16 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorFormatterTest {
     @Test
+    void sugiereInicializarEstructurasYRevisarSusCampos() {
+        String inicializacion = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
+            "La estructura Varita no ha sido inicializada (linea 4)");
+        assertTrue(inicializacion.contains("Crea un valor como Punto"));
+        String campo = ErrorFormatter.formatearMensaje("Error semantico", "principal.dobby",
+            "Falta el campo 'x' al crear Punto (linea 2)");
+        assertTrue(campo.contains("Revisa los campos de Varita"));
+    }
+
+    @Test
     void muestraUbicacionDeArchivoImportadoYSugerencia() {
         String texto = ErrorFormatter.formatearMensaje("Error semantico", "principal.dobby",
             "[biblioteca.dobby] La variable 'x' no ha sido declarada (linea 4)");

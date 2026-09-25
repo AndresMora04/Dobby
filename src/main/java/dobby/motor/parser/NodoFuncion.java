@@ -11,6 +11,15 @@ public class NodoFuncion extends Nodo {
     private boolean esPrincipal;
     private Map<String, NodoFuncion> ambito;
     private String archivo;
+    private Map<String, NodoEstructura> estructuras = Map.of();
+
+    public Map<String, NodoEstructura> getEstructuras() {
+        return estructuras;
+    }
+
+    public void setEstructuras(Map<String, NodoEstructura> estructuras) {
+        this.estructuras = estructuras;
+    }
 
     public String getArchivo() {
         return archivo;

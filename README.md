@@ -110,7 +110,7 @@ mvn package
 | `Hogwarts` | Función principal (punto de entrada) | `Hogwarts() { ... }` | `Hogwarts() { ... }` |
 | `Gringotts` | Tipo compuesto: arreglo | `Gringotts<Tipo> nombre;` | `Gringotts<Entero> numeros;` |
 | `Varita` | Tipo compuesto: struct | `Varita Nombre { campo: Tipo; ... }` | `Varita Punto { x: Entero; y: Entero; }` |
-| `Floo` | Importar función de otro archivo | `Floo funcion desde "archivo.dobby";` | `Floo sumar desde "operaciones.dobby";` |
+| `Floo` | Importar función o estructura de otro archivo | `Floo nombre desde "archivo.dobby";` | `Floo sumar desde "operaciones.dobby";` |
 | `Obliviate` | Tipo/valor nulo | literal / tipo | `Alohomora resultado: Obliviate;` |
 
 > Nota de diseño: Dobby no usa una palabra reservada para la asignación en
@@ -184,7 +184,7 @@ Hogwarts() {
   `Alohomora`.
 - Las importaciones (`Floo`) se resuelven en tiempo de compilación; el
   compilador debe validar: existencia del archivo, existencia de la
-  función, cantidad de argumentos, compatibilidad de tipos, declaraciones
+  función o estructura, cantidad de argumentos, compatibilidad de tipos, declaraciones
   duplicadas e importaciones circulares.
 
 ## Tipos de datos
@@ -242,10 +242,71 @@ Salida: `[80, 95, 100]` y `275`.
 - El tamaño de cada arreglo es fijo; no se agregan ni eliminan posiciones.
   `==` y `!=` comparan referencias. No se admite aritmética entre arreglos.
 - Se admiten arreglos anidados: `Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];`,
-  con acceso como `tabla[0][1]`. `Varita` permanece pendiente.
+  con acceso como `tabla[0][1]`, y arreglos de estructuras como `Gringotts<Punto>`.
 
 Los ejemplos del editor incluyen arreglos, recorridos y una función que suma
 sus elementos. Las pruebas están en `GringottsTest` y se ejecutan con `mvn test`.
+
+### Estructuras Varita
+
+`Varita` define un tipo con campos. Se declara fuera de las funciones;
+las variables usan su nombre como tipo, no la palabra `Varita`.
+
+```text
+Varita Alumno {
+    nombre: Texto;
+    nota: Decimal;
+}
+
+Expecto subirNota(alumno: Alumno, puntos: Decimal): Obliviate {
+    alumno.nota = alumno.nota + puntos;
+}
+
+Hogwarts() {
+    Gringotts<Alumno> alumnos = [
+        Alumno {nombre: "Harry", nota: 80},
+        Alumno {nombre: "Hermione", nota: 95}
+    ];
+    Accio subirNota(alumnos[0], 5);
+    Wingardium (i = 0; i < alumnos.longitud; i = i + 1) {
+        Revelio alumnos[i].nombre + ": " + alumnos[i].nota;
+    }
+}
+```
+
+Salida: `Harry: 85.0` y `Hermione: 95.0`. Este programa completo aparece
+en **Ejemplos > Estructuras (Varita)** para insertarlo en un archivo vacío.
+
+- La creación usa `Nombre {campo: valor, otro: valor}`. Todos los campos
+  son obligatorios; se rechazan faltantes, duplicados y nombres desconocidos.
+- Se valida el tipo de cada campo. `Decimal` admite valores enteros;
+  los arreglos literales de un campo reciben también su tipo declarado.
+- Los valores se evalúan en el orden escrito, aunque los campos pueden
+  proporcionarse en un orden diferente al de la declaración.
+- Se admiten campos simples, arreglos y otras estructuras, incluidos tipos
+  declarados después. Se pueden encadenar accesos: `grupo.alumnos[0].nota`.
+- Los tipos son nominales: dos estructuras con nombres diferentes no son
+  intercambiables aunque tengan los mismos campos.
+- Las asignaciones, parámetros y retornos comparten referencias.
+  Modificar un campo afecta a todas las referencias; asignar otra instancia
+  reemplaza solo esa referencia. `==` y `!=` comparan identidad.
+- Una variable declarada sin valor, como `Alohomora a: Alumno;`, debe recibir
+  una instancia completa antes de consultar o modificar sus campos.
+- `Revelio` muestra el nombre y los campos en orden de declaración.
+  Las referencias circulares se muestran como `<ciclo>`, sin recursión infinita.
+- Se permiten estructuras vacías (`Varita Vacia {}` y `Vacia {}`) y campos
+  llamados `longitud`. La longitud de los arreglos sigue siendo de solo lectura.
+
+Para compartir tipos entre archivos, se puede escribir
+`Floo Alumno desde "tipos.dobby";`. El nombre importado debe declararse
+directamente en ese archivo. Importar una función o estructura incorpora
+las estructuras visibles del módulo y de sus dependencias; las funciones
+siguen requiriendo su propio `Floo`. Una misma definición puede llegar por
+varias importaciones, pero dos definiciones distintas con el mismo nombre
+se rechazan para evitar mezclar tipos incompatibles.
+
+Pruebas: `VaritaTest`, los ejemplos del editor y la integración de proyectos,
+ejecutables con `mvn test`.
 
 ## Proyectos y archivo principal
 
@@ -429,5 +490,7 @@ importaciones y gestión de proyectos con detección del archivo principal.
 `Gringotts` está implementado con acceso por índice, modificación,
 longitud, funciones y pruebas automatizadas.
 
-Siguen pendientes las estructuras `Varita` y la lectura de voz, además
-de los demás ajustes de la entrega final.
+`Varita` está implementado con creación de valores, lectura y escritura de
+campos, tipos anidados, arreglos, funciones, importaciones y pruebas.
+
+Siguen pendientes la lectura de voz y los demás ajustes de la entrega final.

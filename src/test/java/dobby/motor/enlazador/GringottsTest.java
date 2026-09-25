@@ -162,6 +162,7 @@ class GringottsTest {
             Arguments.of("indice sin convertir", "Gringotts<Entero> a=[1]; Revelio a[Legilimens()];", "indice"),
             Arguments.of("escalar indexado", "Alohomora a: Entero=1; Revelio a[0];", "Se requiere un arreglo"),
             Arguments.of("longitud de texto", "Revelio \"hola\".longitud;", "Se requiere un arreglo"),
+            Arguments.of("longitud de solo lectura", "Gringotts<Entero> a=[1]; a.longitud=3;", "solo lectura"),
             Arguments.of("variable inexistente", "a[0]=1;", "no ha sido declarada"),
             Arguments.of("indice inexistente", "Gringotts<Entero> a=[1]; Revelio a[i];", "no ha sido declarada"),
             Arguments.of("sin covarianza", "Gringotts<Entero> a=[1]; Gringotts<Decimal> b=a;", "Gringotts<Decimal>"),
@@ -184,8 +185,7 @@ class GringottsTest {
 
     static Stream<String> sintaxisInvalida() {
         return Stream.of("Revelio [1 2];", "Revelio [1,2;", "Revelio [1,];",
-            "Gringotts<Entero> a=[1]; Revelio a[];",
-            "Gringotts<Entero> a=[1]; a.longitud=3;");
+            "Gringotts<Entero> a=[1]; Revelio a[];");
     }
 
     @ParameterizedTest

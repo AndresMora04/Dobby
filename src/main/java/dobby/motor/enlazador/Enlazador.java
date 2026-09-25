@@ -4,6 +4,7 @@ import dobby.motor.lexer.Lexer;
 import dobby.motor.lexer.Token;
 import dobby.motor.parser.Nodo;
 import dobby.motor.parser.NodoFuncion;
+import dobby.motor.parser.NodoEstructura;
 import dobby.motor.parser.NodoImportacion;
 import dobby.motor.parser.NodoPrograma;
 import dobby.motor.parser.Parser;
@@ -17,9 +18,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Enlazador {
-    private record Modulo(Map<String, NodoFuncion> propias) {
+    private record Modulo(Map<String, NodoFuncion> propias,
+                          Map<String, NodoEstructura> estructurasPropias,
+                          Map<String, NodoEstructura> estructuras) {
     }
 
     private final Lexer lexer = new Lexer();
@@ -65,6 +70,7 @@ public class Enlazador {
 
     private Modulo construirModulo(NodoPrograma programa, Path clave, String etiqueta, Path carpeta) {
         Map<String, NodoFuncion> propias = new LinkedHashMap<>();
+        Map<String, NodoEstructura> estructurasPropias = new LinkedHashMap<>();
         List<NodoImportacion> importaciones = new ArrayList<>();
         for (Nodo sentencia : programa.getSentencias()) {
             if (sentencia instanceof NodoFuncion funcion) {
@@ -72,23 +78,43 @@ public class Enlazador {
                     throw new ErrorEnlace(prefijo(etiqueta) + "La funcion '" + funcion.getNombre()
                         + "' esta declarada mas de una vez (linea " + funcion.getLinea() + ")");
                 }
+            } else if (sentencia instanceof NodoEstructura estructura) {
+                if (estructurasPropias.putIfAbsent(estructura.getNombre(), estructura) != null) {
+                    throw new ErrorEnlace(prefijo(etiqueta) + "La estructura '" + estructura.getNombre()
+                        + "' esta declarada mas de una vez (linea " + estructura.getLinea() + ")");
+                }
             } else if (sentencia instanceof NodoImportacion importacion) {
                 importaciones.add(importacion);
             }
         }
 
         Map<String, NodoFuncion> ambito = new HashMap<>(propias);
+        Map<String, NodoEstructura> estructuras = new LinkedHashMap<>(estructurasPropias);
+        Set<String> nombresImportados = new HashSet<>();
         if (clave != null) {
             pila.add(clave);
         }
         try {
             for (NodoImportacion importacion : importaciones) {
-                NodoFuncion importada = resolverImportacion(importacion, etiqueta, carpeta);
-                if (ambito.containsKey(importacion.getNombreFuncion())) {
-                    throw error(etiqueta, "La funcion '" + importacion.getNombreFuncion()
+                Modulo modulo = resolverImportacion(importacion, etiqueta, carpeta);
+                String nombre = importacion.getNombreFuncion();
+                if (propias.containsKey(nombre) || estructurasPropias.containsKey(nombre)
+                    || !nombresImportados.add(nombre)) {
+                    throw error(etiqueta, "La funcion o estructura '" + nombre
                         + "' ya esta declarada o importada en este archivo", importacion.getLinea());
                 }
-                ambito.put(importacion.getNombreFuncion(), importada);
+                NodoFuncion importada = modulo.propias().get(nombre);
+                if (importada != null) {
+                    ambito.put(nombre, importada);
+                }
+                // Las funciones importadas conservan los tipos de su modulo y sus dependencias.
+                for (NodoEstructura estructura : modulo.estructuras().values()) {
+                    NodoEstructura anterior = estructuras.putIfAbsent(estructura.getNombre(), estructura);
+                    if (anterior != null && anterior != estructura) {
+                        throw error(etiqueta, "Hay estructuras distintas con el nombre '"
+                            + estructura.getNombre() + "'", importacion.getLinea());
+                    }
+                }
             }
         } finally {
             if (clave != null) {
@@ -96,17 +122,25 @@ public class Enlazador {
             }
         }
 
+        for (NodoEstructura estructura : estructuras.values()) {
+            if (ambito.containsKey(estructura.getNombre())) {
+                throw new ErrorEnlace(prefijo(etiqueta) + "El nombre '" + estructura.getNombre()
+                    + "' se usa como funcion y estructura (linea " + estructura.getLinea() + ")");
+            }
+        }
+        new ValidadorSemantico().validarEstructuras(estructurasPropias, estructuras, etiqueta);
         for (NodoFuncion funcion : propias.values()) {
             funcion.setAmbito(ambito);
             funcion.setArchivo(etiqueta);
+            funcion.setEstructuras(estructuras);
         }
         for (NodoFuncion funcion : propias.values()) {
             new ValidadorSemantico().validar(funcion);
         }
-        return new Modulo(propias);
+        return new Modulo(propias, estructurasPropias, estructuras);
     }
 
-    private NodoFuncion resolverImportacion(NodoImportacion importacion, String etiqueta, Path carpeta) {
+    private Modulo resolverImportacion(NodoImportacion importacion, String etiqueta, Path carpeta) {
         if (carpeta == null) {
             throw error(etiqueta, "Guarda el archivo o abre un proyecto para poder usar Floo", importacion.getLinea());
         }
@@ -138,14 +172,14 @@ public class Enlazador {
         }
 
         NodoFuncion funcion = modulo.propias().get(importacion.getNombreFuncion());
-        if (funcion == null) {
+        if (funcion == null && !modulo.estructurasPropias().containsKey(importacion.getNombreFuncion())) {
             throw error(etiqueta, "El archivo '" + nombreArchivo + "' no declara la funcion '"
-                + importacion.getNombreFuncion() + "'", importacion.getLinea());
+                + importacion.getNombreFuncion() + "' ni una estructura con ese nombre", importacion.getLinea());
         }
-        if (funcion.isEsPrincipal()) {
+        if (funcion != null && funcion.isEsPrincipal()) {
             throw error(etiqueta, "No se puede importar la funcion principal Hogwarts", importacion.getLinea());
         }
-        return funcion;
+        return modulo;
     }
 
     private String cadenaCircular(Path destino) {

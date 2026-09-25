@@ -5,6 +5,9 @@ import dobby.motor.parser.NodoArreglo;
 import dobby.motor.parser.NodoAccesoArreglo;
 import dobby.motor.parser.NodoAsignacionArreglo;
 import dobby.motor.parser.NodoLongitud;
+import dobby.motor.parser.NodoCreacionEstructura;
+import dobby.motor.parser.NodoAccesoCampo;
+import dobby.motor.parser.NodoAsignacionCampo;
 import dobby.motor.parser.NodoAsignacion;
 import dobby.motor.parser.NodoContinuar;
 import dobby.motor.parser.NodoDeclaracionVariable;
@@ -28,6 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Interprete {
     private final Map<String, NodoFuncion> funciones = new HashMap<>();
@@ -132,6 +138,9 @@ public class Interprete {
     }
 
     private String inferirTipo(Object valor) {
+        if (valor instanceof ValorEstructura estructura) {
+            return estructura.getDefinicion().getNombre();
+        }
         if (valor instanceof ValorArreglo arreglo) {
             return "Gringotts<" + arreglo.getTipoElemento() + ">";
         }
@@ -171,6 +180,16 @@ public class Interprete {
                 arreglo.validarIndice(indice, destino.getLinea());
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
                 arreglo.asignar(indice, coercionar(valor, arreglo.getTipoElemento(), n.getLinea()), n.getLinea());
+            }
+            case NodoAsignacionCampo n -> {
+                NodoAccesoCampo destino = n.getDestino();
+                if (destino.isLongitudArreglo()) {
+                    throw new ErrorEjecucion("La longitud de Gringotts es de solo lectura", destino.getLinea());
+                }
+                ValorEstructura estructura = obtenerEstructura(destino.getEstructura(), entorno, destino.getLinea());
+                String tipo = estructura.tipoCampo(destino.getCampo(), destino.getLinea());
+                Object valor = evaluarExpresion(n.getExpresion(), entorno);
+                estructura.asignar(destino.getCampo(), coercionar(valor, tipo, n.getLinea()), n.getLinea());
             }
             case NodoImpresion n -> {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
@@ -221,6 +240,13 @@ public class Interprete {
             case NodoLiteral n -> n.getValor();
             case NodoVariable n -> entorno.obtener(n.getNombre(), n.getLinea());
             case NodoArreglo n -> evaluarArreglo(n, entorno);
+            case NodoCreacionEstructura n -> evaluarEstructura(n, entorno);
+            case NodoAccesoCampo n -> {
+                if (n.isLongitudArreglo()) {
+                    yield obtenerArreglo(n.getEstructura(), entorno, n.getLinea()).longitud();
+                }
+                yield obtenerEstructura(n.getEstructura(), entorno, n.getLinea()).obtener(n.getCampo(), n.getLinea());
+            }
             case NodoAccesoArreglo n -> {
                 ValorArreglo arreglo = obtenerArreglo(n.getArreglo(), entorno, n.getLinea());
                 yield arreglo.obtener(evaluarIndice(n.getIndice(), entorno), n.getLinea());
@@ -253,6 +279,25 @@ public class Interprete {
             elementos.add(coercionar(valor, nodo.getTipoElemento(), elemento.getLinea()));
         }
         return new ValorArreglo(nodo.getTipoElemento(), elementos);
+    }
+
+    private ValorEstructura evaluarEstructura(NodoCreacionEstructura nodo, Entorno entorno) {
+        Map<String, Object> valores = new LinkedHashMap<>();
+        for (var campo : nodo.getCampos().entrySet()) {
+            String tipo = nodo.getDefinicion().getCampos().get(campo.getKey());
+            Object valor = evaluarExpresion(campo.getValue(), entorno);
+            valores.put(campo.getKey(), coercionar(valor, tipo, campo.getValue().getLinea()));
+        }
+        return new ValorEstructura(nodo.getDefinicion(), valores);
+    }
+
+    private ValorEstructura obtenerEstructura(Nodo expresion, Entorno entorno, int linea) {
+        Object valor = evaluarExpresion(expresion, entorno);
+        if (!(valor instanceof ValorEstructura estructura)) {
+            throw new ErrorEjecucion(valor == null ? "La estructura Varita no ha sido inicializada"
+                : "Se esperaba una estructura Varita", linea);
+        }
+        return estructura;
     }
 
     private ValorArreglo obtenerArreglo(Nodo expresion, Entorno entorno, int linea) {
@@ -381,6 +426,12 @@ public class Interprete {
         if (valor == null && tipoDeclarado != null && !tipoDeclarado.equals("Obliviate")) {
             throw new ErrorEjecucion("No se recibio un valor de tipo " + tipoDeclarado, linea);
         }
+        if (valor instanceof ValorEstructura estructura) {
+            if (!estructura.getDefinicion().getNombre().equals(tipoDeclarado)) {
+                throw new ErrorEjecucion("Se esperaba un valor de tipo " + tipoDeclarado, linea);
+            }
+            return valor;
+        }
         if (tipoDeclarado != null && tipoDeclarado.startsWith("Gringotts<")) {
             String elemento = tipoDeclarado.substring(10, tipoDeclarado.length() - 1);
             if (!(valor instanceof ValorArreglo arreglo) || !elemento.equals(arreglo.getTipoElemento())) {
@@ -418,12 +469,31 @@ public class Interprete {
     }
 
     private String convertirATexto(Object valor) {
+        return convertirATexto(valor, new HashSet<>());
+    }
+
+    private String convertirATexto(Object valor, Set<Object> recorrido) {
+        // Una estructura puede apuntar a si misma a traves de un arreglo o de otro campo.
+        if (valor instanceof ValorArreglo || valor instanceof ValorEstructura) {
+            if (!recorrido.add(valor)) {
+                return "<ciclo>";
+            }
+        }
         if (valor instanceof ValorArreglo arreglo) {
             List<String> textos = new ArrayList<>();
             for (int i = 0; i < arreglo.longitud(); i++) {
-                textos.add(convertirATexto(arreglo.obtener(i, 0)));
+                textos.add(convertirATexto(arreglo.obtener(i, 0), recorrido));
             }
+            recorrido.remove(valor);
             return "[" + String.join(", ", textos) + "]";
+        }
+        if (valor instanceof ValorEstructura estructura) {
+            List<String> textos = new ArrayList<>();
+            for (String campo : estructura.getDefinicion().getCampos().keySet()) {
+                textos.add(campo + ": " + convertirATexto(estructura.obtener(campo, 0), recorrido));
+            }
+            recorrido.remove(valor);
+            return estructura.getDefinicion().getNombre() + " {" + String.join(", ", textos) + "}";
         }
         if (valor == null) {
             return "Obliviate";
