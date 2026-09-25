@@ -400,6 +400,46 @@ public class AyudaDialog extends ModalDialog {
             F1                  Esta ayuda
             """);
 
+        temas.put("Robustez y limites", """
+            Errores léxicos:
+            - Los símbolos desconocidos no se ignoran. Usa && y || completos.
+            - Los textos sin comillas de cierre y comentarios sin cerrar indican
+              la línea donde comenzaron.
+            - Se permiten comentarios // de una línea y /* de varias líneas */.
+              Los comentarios de bloque no se anidan.
+            - Escapes en textos: \\" para comillas, \\\\ para barra invertida,
+              \\n para salto de línea, \\r para retorno y \\t para tabulación.
+              Las rutas de Floo pueden usar /, por ejemplo "lib/tipos.dobby".
+
+            Valores:
+            - Entero admite de -2147483648 a 2147483647. Una operación fuera
+              de rango se detiene, sin producir un número incorrecto.
+            - Decimal no admite NaN ni infinito.
+            - 1 == 1.0 es Lumos. Arreglos y estructuras comparan referencias.
+            - Leer una variable sin inicializar produce un error; Obliviate
+              conserva su valor nulo.
+            - Una declaración dentro de un ciclo se reinicia en cada vuelta.
+            - Cancelar Legilimens detiene el programa.
+
+            Límites fijos para programas educativos:
+            - Por archivo: 1 000 000 caracteres y 100 000 tokens.
+            - Parser: 64 niveles, contando bloques y expresiones.
+            - Expresiones en validación: 64 niveles.
+            - Importaciones: 64 archivos con ruta en la cadena activa.
+            - Ejecución: 100 000 pasos; cuentan sentencias, expresiones y salida.
+            - Llamadas simultáneas: 64, incluyendo Hogwarts.
+            - Expresiones activas al ejecutar: 128 niveles.
+            - Impresión de valores anidados: 64 niveles.
+            - Texto individual: 65 536 caracteres.
+            - Salida acumulada: 20 000 caracteres, incluidos saltos de línea.
+
+            Un límite detiene el programa con un error y conserva la salida
+            anterior. También puede detener programas finitos muy grandes.
+            Los contadores se reinician al ejecutar de nuevo.
+            La ejecución sigue siendo síncrona, con estos límites de protección.
+            Las salidas de más de 200 caracteres aparecen sin animación.
+            """);
+
         temas.put("Errores comunes", """
             Los errores se muestran así:  [archivo.dobby] mensaje (linea N)
 

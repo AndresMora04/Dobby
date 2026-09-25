@@ -11,10 +11,12 @@ import java.util.Map;
 public class Parser {
     private List<Token> tokens;
     private int posicion;
+    private int profundidad;
 
     public NodoPrograma parsear(List<Token> tokens) {
         this.tokens = new ArrayList<>(tokens);
         this.posicion = 0;
+        this.profundidad = 0;
 
         List<Nodo> sentencias = new ArrayList<>();
         while (!finDeTokens()) {
@@ -133,6 +135,15 @@ public class Parser {
     }
 
     private List<Nodo> bloque() {
+        entrar();
+        try {
+            return leerBloque();
+        } finally {
+            profundidad--;
+        }
+    }
+
+    private List<Nodo> leerBloque() {
         List<Nodo> sentencias = new ArrayList<>();
         while (!verificar("}") && !finDeTokens()) {
             sentencias.add(sentencia());
@@ -424,8 +435,25 @@ public class Parser {
     }
 
     private Nodo unario() {
+        entrar();
+        try {
+            return leerUnario();
+        } finally {
+            profundidad--;
+        }
+    }
+
+    private Nodo leerUnario() {
         if (verificar("!") || verificar("-")) {
             Token operadorToken = avanzar();
+            if (operadorToken.getValor().equals("-") && actual().getTipo() == TipoToken.NUMERO
+                && actual().getValor().equals("2147483648")) {
+                avanzar();
+                NodoLiteral minimo = new NodoLiteral();
+                minimo.setValor(Integer.MIN_VALUE);
+                minimo.setLinea(operadorToken.getLinea());
+                return minimo;
+            }
             NodoOperacionUnaria nodo = new NodoOperacionUnaria();
             nodo.setOperador(operadorToken.getValor());
             nodo.setOperando(unario());
@@ -571,10 +599,16 @@ public class Parser {
 
     private NodoLiteral literalNumero(Token t) {
         NodoLiteral nodo = new NodoLiteral();
-        if (t.getValor().contains(".")) {
-            nodo.setValor(Double.parseDouble(t.getValor()));
-        } else {
-            nodo.setValor(Integer.parseInt(t.getValor()));
+        try {
+            if (t.getValor().contains(".")) {
+                double valor = Double.parseDouble(t.getValor());
+                if (!Double.isFinite(valor)) throw new NumberFormatException();
+                nodo.setValor(valor);
+            } else {
+                nodo.setValor(Integer.parseInt(t.getValor()));
+            }
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Literal numerico fuera de rango (linea " + t.getLinea() + ")");
         }
         nodo.setLinea(t.getLinea());
         return nodo;
@@ -595,6 +629,18 @@ public class Parser {
     }
 
     private String tipo() {
+        entrar();
+        try {
+            return leerTipo();
+        } finally {
+            profundidad--;
+        }
+    }
+
+    private String leerTipo() {
+        if (actual().getTipo() != TipoToken.IDENTIFICADOR && actual().getTipo() != TipoToken.PALABRA_RESERVADA) {
+            throw error("Se esperaba un tipo de dato");
+        }
         Token t = avanzar();
         String texto = t.getValor();
         if (coincide("<")) {
@@ -663,5 +709,12 @@ public class Parser {
 
     private RuntimeException error(String mensaje) {
         return new RuntimeException(mensaje + " (linea " + actual().getLinea() + ", token '" + actual().getValor() + "')");
+    }
+
+    private void entrar() {
+        if (profundidad >= 64) {
+            throw error("Se supero el limite de 64 niveles de anidamiento");
+        }
+        profundidad++;
     }
 }

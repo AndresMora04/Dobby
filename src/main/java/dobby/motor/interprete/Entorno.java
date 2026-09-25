@@ -19,9 +19,7 @@ public class Entorno {
     }
 
     public void declarar(String nombre, String tipo, int linea) {
-        if (tipos.containsKey(nombre)) {
-            throw new ErrorEjecucion("La variable '" + nombre + "' ya habia sido declarada", linea);
-        }
+        // El validador rechaza duplicados; una declaracion dentro de un ciclo se reinicia en cada vuelta.
         tipos.put(nombre, tipo);
         valores.put(nombre, null);
     }
@@ -37,7 +35,18 @@ public class Entorno {
         if (!tipos.containsKey(nombre)) {
             throw new ErrorEjecucion("La variable '" + nombre + "' no ha sido declarada", linea);
         }
-        return valores.get(nombre);
+        Object valor = valores.get(nombre);
+        String tipo = tipos.get(nombre);
+        if (valor == null && !"Obliviate".equals(tipo)) {
+            if (tipo != null && tipo.startsWith("Gringotts<")) {
+                throw new ErrorEjecucion("El arreglo Gringotts '" + nombre + "' no ha sido inicializado", linea);
+            }
+            if (!java.util.List.of("Entero", "Decimal", "Booleano", "Texto", "Caracter").contains(tipo)) {
+                throw new ErrorEjecucion("La estructura Varita '" + nombre + "' no ha sido inicializada", linea);
+            }
+            throw new ErrorEjecucion("La variable '" + nombre + "' no ha sido inicializada", linea);
+        }
+        return valor;
     }
 
     public String obtenerTipo(String nombre) {

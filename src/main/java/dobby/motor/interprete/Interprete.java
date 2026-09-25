@@ -36,6 +36,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Interprete {
+    private static final int MAX_PASOS = 100_000;
+    private static final int MAX_LLAMADAS = 64;
+    private static final int MAX_TEXTO = 65_536;
+    private static final int MAX_SALIDA = 20_000;
+    private int pasos;
+    private int llamadas;
+    private int profundidadExpresion;
+    private int ultimaLinea;
     private final Map<String, NodoFuncion> funciones = new HashMap<>();
     private final StringBuilder salida = new StringBuilder();
     private final ProveedorEntrada proveedorEntrada;
@@ -51,6 +59,10 @@ public class Interprete {
     public ResultadoEjecucion ejecutar(NodoPrograma programa) {
         funciones.clear();
         salida.setLength(0);
+        pasos = 0;
+        llamadas = 0;
+        profundidadExpresion = 0;
+        ultimaLinea = 1;
         ResultadoEjecucion resultado = new ResultadoEjecucion();
         try {
             registrarFunciones(programa);
@@ -85,6 +97,19 @@ public class Interprete {
     }
 
     private Object invocarFuncion(NodoFuncion funcion, List<Object> argumentos) {
+        llamadas++;
+        try {
+            return ejecutarFuncion(funcion, argumentos);
+        } catch (StackOverflowError e) {
+            ErrorEjecucion error = new ErrorEjecucion("Se supero el limite de anidamiento de ejecucion", ultimaLinea);
+            error.setArchivo(funcion.getArchivo());
+            throw error;
+        } finally {
+            llamadas--;
+        }
+    }
+
+    private Object ejecutarFuncion(NodoFuncion funcion, List<Object> argumentos) {
         List<String> nombresParametros = new ArrayList<>(funcion.getParametros().keySet());
         List<String> tiposParametros = new ArrayList<>(funcion.getParametros().values());
 
@@ -156,10 +181,11 @@ public class Interprete {
         if (valor instanceof String) {
             return "Texto";
         }
-        return null;
+        return "Obliviate";
     }
 
     private void ejecutarSentencia(Nodo nodo, Entorno entorno) {
+        contarPaso(nodo.getLinea());
         switch (nodo) {
             case NodoDeclaracionVariable n -> {
                 entorno.declarar(n.getNombre(), n.getTipo(), n.getLinea());
@@ -193,7 +219,12 @@ public class Interprete {
             }
             case NodoImpresion n -> {
                 Object valor = evaluarExpresion(n.getExpresion(), entorno);
-                salida.append(convertirATexto(valor)).append(System.lineSeparator());
+                String texto = convertirATexto(valor, n.getLinea());
+                String salto = System.lineSeparator();
+                if (salida.length() + texto.length() + salto.length() > MAX_SALIDA) {
+                    throw new ErrorEjecucion("Se supero el limite de " + MAX_SALIDA + " caracteres de salida", n.getLinea());
+                }
+                salida.append(texto).append(salto);
             }
             case NodoRetorno n -> {
                 Object valor = n.getExpresion() != null ? evaluarExpresion(n.getExpresion(), entorno) : null;
@@ -236,6 +267,23 @@ public class Interprete {
     }
 
     private Object evaluarExpresion(Nodo nodo, Entorno entorno) {
+        contarPaso(nodo.getLinea());
+        if (profundidadExpresion >= 128) {
+            throw new ErrorEjecucion("Se supero el limite de 128 niveles de expresion en ejecucion", nodo.getLinea());
+        }
+        profundidadExpresion++;
+        try {
+            Object valor = evaluarValor(nodo, entorno);
+            if (valor instanceof String texto && texto.length() > MAX_TEXTO) {
+                throw new ErrorEjecucion("Se supero el limite de " + MAX_TEXTO + " caracteres por texto", nodo.getLinea());
+            }
+            return valor;
+        } finally {
+            profundidadExpresion--;
+        }
+    }
+
+    private Object evaluarValor(Nodo nodo, Entorno entorno) {
         return switch (nodo) {
             case NodoLiteral n -> n.getValor();
             case NodoVariable n -> entorno.obtener(n.getNombre(), n.getLinea());
@@ -254,13 +302,22 @@ public class Interprete {
             case NodoLongitud n -> obtenerArreglo(n.getArreglo(), entorno, n.getLinea()).longitud();
             case NodoOperacionBinaria n -> evaluarBinaria(n, entorno);
             case NodoOperacionUnaria n -> evaluarUnaria(n, entorno);
-            case NodoEntrada n -> proveedorEntrada.leer("Ingrese un valor:");
+            case NodoEntrada n -> {
+                String entrada = proveedorEntrada.leer("Ingrese un valor:");
+                if (entrada == null) {
+                    throw new ErrorEjecucion("Ejecucion cancelada durante Legilimens", n.getLinea());
+                }
+                yield entrada;
+            }
             case NodoLlamada n -> evaluarLlamada(n, entorno);
             default -> throw new ErrorEjecucion("Expresion no reconocida por el interprete", nodo.getLinea());
         };
     }
 
     private Object evaluarLlamada(NodoLlamada nodo, Entorno entorno) {
+        if (llamadas >= MAX_LLAMADAS) {
+            throw new ErrorEjecucion("Se supero el limite de " + MAX_LLAMADAS + " llamadas simultaneas", nodo.getLinea());
+        }
         NodoFuncion funcion = entorno.getAmbito().get(nodo.getNombreFuncion());
         if (funcion == null) {
             throw new ErrorEjecucion("La funcion '" + nodo.getNombreFuncion() + "' no esta declarada", nodo.getLinea());
@@ -328,7 +385,11 @@ public class Interprete {
 
     private Object negar(Object valor, int linea) {
         if (valor instanceof Integer i) {
-            return -i;
+            try {
+                return Math.negateExact(i);
+            } catch (ArithmeticException e) {
+                throw new ErrorEjecucion("Resultado Entero fuera de rango", linea);
+            }
         }
         if (valor instanceof Double d) {
             return -d;
@@ -356,11 +417,11 @@ public class Interprete {
 
         return switch (operador) {
             case "+" -> sumar(izquierda, derecha, linea);
-            case "-" -> aritmetica(izquierda, derecha, linea, (a, b) -> a - b, (a, b) -> a - b);
-            case "*" -> aritmetica(izquierda, derecha, linea, (a, b) -> a * b, (a, b) -> a * b);
+            case "-" -> aritmetica(izquierda, derecha, linea, Math::subtractExact, (a, b) -> a - b);
+            case "*" -> aritmetica(izquierda, derecha, linea, Math::multiplyExact, (a, b) -> a * b);
             case "/" -> dividir(izquierda, derecha, linea);
-            case "==" -> Objects.equals(izquierda, derecha);
-            case "!=" -> !Objects.equals(izquierda, derecha);
+            case "==" -> iguales(izquierda, derecha);
+            case "!=" -> !iguales(izquierda, derecha);
             case ">" -> comparar(izquierda, derecha, linea) > 0;
             case "<" -> comparar(izquierda, derecha, linea) < 0;
             case ">=" -> comparar(izquierda, derecha, linea) >= 0;
@@ -371,9 +432,21 @@ public class Interprete {
 
     private Object sumar(Object izquierda, Object derecha, int linea) {
         if (izquierda instanceof String || derecha instanceof String) {
-            return convertirATexto(izquierda) + convertirATexto(derecha);
+            String a = convertirATexto(izquierda, linea);
+            String b = convertirATexto(derecha, linea);
+            if (a.length() + b.length() > MAX_TEXTO) {
+                throw new ErrorEjecucion("Se supero el limite de " + MAX_TEXTO + " caracteres por texto", linea);
+            }
+            return a + b;
         }
-        return aritmetica(izquierda, derecha, linea, Integer::sum, Double::sum);
+        return aritmetica(izquierda, derecha, linea, Math::addExact, Double::sum);
+    }
+
+    private boolean iguales(Object izquierda, Object derecha) {
+        if (izquierda instanceof Number a && derecha instanceof Number b) {
+            return a.doubleValue() == b.doubleValue();
+        }
+        return Objects.equals(izquierda, derecha);
     }
 
     private interface OperacionEntera {
@@ -386,10 +459,14 @@ public class Interprete {
 
     private Object aritmetica(Object izquierda, Object derecha, int linea, OperacionEntera opEntera, OperacionDecimal opDecimal) {
         if (izquierda instanceof Integer a && derecha instanceof Integer b) {
-            return opEntera.aplicar(a, b);
+            try {
+                return opEntera.aplicar(a, b);
+            } catch (ArithmeticException e) {
+                throw new ErrorEjecucion("Resultado Entero fuera de rango", linea);
+            }
         }
         if (izquierda instanceof Number a && derecha instanceof Number b) {
-            return opDecimal.aplicar(a.doubleValue(), b.doubleValue());
+            return decimalFinito(opDecimal.aplicar(a.doubleValue(), b.doubleValue()), linea);
         }
         throw new ErrorEjecucion("Operacion aritmetica invalida entre " + tipoDeValor(izquierda) + " y " + tipoDeValor(derecha), linea);
     }
@@ -403,13 +480,17 @@ public class Interprete {
             throw new ErrorEjecucion("Division entre cero", linea);
         }
         if (izquierda instanceof Integer a && derecha instanceof Integer b) {
+            if (a == Integer.MIN_VALUE && b == -1) {
+                throw new ErrorEjecucion("Resultado Entero fuera de rango", linea);
+            }
             return a / b;
         }
-        return ((Number) izquierda).doubleValue() / divisor;
+        return decimalFinito(((Number) izquierda).doubleValue() / divisor, linea);
     }
 
     private int comparar(Object izquierda, Object derecha, int linea) {
         if (izquierda instanceof Number a && derecha instanceof Number b) {
+            if (a.doubleValue() == b.doubleValue()) return 0;
             return Double.compare(a.doubleValue(), b.doubleValue());
         }
         throw new ErrorEjecucion("No se pueden comparar " + tipoDeValor(izquierda) + " y " + tipoDeValor(derecha), linea);
@@ -448,7 +529,7 @@ public class Interprete {
         try {
             return switch (tipoDeclarado) {
                 case "Entero" -> Integer.parseInt(texto.trim());
-                case "Decimal" -> Double.parseDouble(texto.trim());
+                case "Decimal" -> decimalFinito(Double.parseDouble(texto.trim()), linea);
                 case "Booleano" -> {
                     if (!texto.trim().equalsIgnoreCase("Lumos") && !texto.trim().equalsIgnoreCase("Nox")) {
                         throw new ErrorEjecucion("El tipo Booleano requiere Lumos o Nox", linea);
@@ -468,40 +549,71 @@ public class Interprete {
         }
     }
 
-    private String convertirATexto(Object valor) {
-        return convertirATexto(valor, new HashSet<>());
+    private double decimalFinito(double valor, int linea) {
+        if (!Double.isFinite(valor)) {
+            throw new ErrorEjecucion("Valor Decimal fuera de rango: no se permiten NaN ni infinito", linea);
+        }
+        return valor;
     }
 
-    private String convertirATexto(Object valor, Set<Object> recorrido) {
-        // Una estructura puede apuntar a si misma a traves de un arreglo o de otro campo.
+    private void contarPaso(int linea) {
+        ultimaLinea = linea;
+        if (Thread.currentThread().isInterrupted()) {
+            throw new ErrorEjecucion("Ejecucion interrumpida", linea);
+        }
+        if (++pasos > MAX_PASOS) {
+            throw new ErrorEjecucion("Se supero el limite de " + MAX_PASOS + " pasos de ejecucion", linea);
+        }
+    }
+
+    private String convertirATexto(Object valor, int linea) {
+        StringBuilder texto = new StringBuilder();
+        escribirValor(valor, texto, new HashSet<>(), linea);
+        return texto.toString();
+    }
+
+    private void escribirValor(Object valor, StringBuilder texto, Set<Object> recorrido, int linea) {
+        contarPaso(linea);
+        // Se limita el recorrido antes de expandir colecciones grandes o referencias circulares.
         if (valor instanceof ValorArreglo || valor instanceof ValorEstructura) {
+            if (recorrido.size() >= 64) {
+                throw new ErrorEjecucion("Se supero el limite de 64 niveles al mostrar un valor", linea);
+            }
             if (!recorrido.add(valor)) {
-                return "<ciclo>";
+                agregarTexto(texto, "<ciclo>", linea);
+                return;
             }
         }
         if (valor instanceof ValorArreglo arreglo) {
-            List<String> textos = new ArrayList<>();
+            agregarTexto(texto, "[", linea);
             for (int i = 0; i < arreglo.longitud(); i++) {
-                textos.add(convertirATexto(arreglo.obtener(i, 0), recorrido));
+                if (i > 0) agregarTexto(texto, ", ", linea);
+                escribirValor(arreglo.obtener(i, linea), texto, recorrido, linea);
             }
+            agregarTexto(texto, "]", linea);
             recorrido.remove(valor);
-            return "[" + String.join(", ", textos) + "]";
-        }
-        if (valor instanceof ValorEstructura estructura) {
-            List<String> textos = new ArrayList<>();
+        } else if (valor instanceof ValorEstructura estructura) {
+            agregarTexto(texto, estructura.getDefinicion().getNombre() + " {", linea);
+            boolean primero = true;
             for (String campo : estructura.getDefinicion().getCampos().keySet()) {
-                textos.add(campo + ": " + convertirATexto(estructura.obtener(campo, 0), recorrido));
+                if (!primero) agregarTexto(texto, ", ", linea);
+                agregarTexto(texto, campo + ": ", linea);
+                escribirValor(estructura.obtener(campo, linea), texto, recorrido, linea);
+                primero = false;
             }
+            agregarTexto(texto, "}", linea);
             recorrido.remove(valor);
-            return estructura.getDefinicion().getNombre() + " {" + String.join(", ", textos) + "}";
+        } else {
+            agregarTexto(texto, valor == null ? "Obliviate"
+                : valor instanceof Boolean b ? (b ? "Lumos" : "Nox") : String.valueOf(valor), linea);
         }
-        if (valor == null) {
-            return "Obliviate";
+    }
+
+    private void agregarTexto(StringBuilder destino, String texto, int linea) {
+        if (destino.length() + texto.length() > MAX_TEXTO) {
+            throw new ErrorEjecucion("Se supero el limite de " + MAX_TEXTO + " caracteres por texto", linea);
         }
-        if (valor instanceof Boolean b) {
-            return b ? "Lumos" : "Nox";
-        }
-        return String.valueOf(valor);
+        destino.append(texto);
     }
 
     private String tipoDeValor(Object valor) {

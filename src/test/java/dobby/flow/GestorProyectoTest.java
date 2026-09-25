@@ -53,6 +53,19 @@ class GestorProyectoTest {
     }
 
     @Test
+    void comentariosNoAgreganPrincipalesYErroresLexicosConservanSuTipo() throws Exception {
+        escribir("principal.dobby", "Hogwarts() {}");
+        Path auxiliar = escribir("auxiliar.dobby", "// Hogwarts() {}\n/* Hogwarts() {} */");
+        Proyecto proyecto = gestor.cargar(carpeta);
+        assertEquals("principal.dobby", gestor.buscarPrincipal(proyecto).getNombre());
+        abiertos.put(auxiliar, "// comentario\n@");
+        ErrorEnlace error = assertThrows(ErrorEnlace.class, () -> gestor.enlazar(proyecto));
+        assertEquals("Error lexico", error.getTipo());
+        assertTrue(error.getMessage().contains("[auxiliar.dobby]"));
+        assertTrue(error.getMessage().contains("linea 2"));
+    }
+
+    @Test
     void creaProyectoEjecutableSinSobrescribir() throws Exception {
         Proyecto proyecto = gestor.crear(carpeta, "MiProyecto");
         assertTrue(Files.isRegularFile(proyecto.getCarpeta().resolve("principal.dobby")));

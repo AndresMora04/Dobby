@@ -204,7 +204,7 @@ class GringottsTest {
             Arguments.of("Gringotts<Entero> a=[]; Revelio a[0];", "fuera de rango"),
             Arguments.of("Gringotts<Entero> a; Revelio a.longitud;", "no ha sido inicializado"),
             Arguments.of("Gringotts<Entero> a; a[0]=1;", "no ha sido inicializado"),
-            Arguments.of("Gringotts<Entero> a=[1]; Alohomora i: Entero; Revelio a[i];", "indice")
+            Arguments.of("Gringotts<Entero> a=[1]; Alohomora i: Entero; Revelio a[i];", "variable 'i' no ha sido inicializada")
         );
     }
 

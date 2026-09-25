@@ -77,10 +77,20 @@ public class OutputPanel extends JPanel {
     }
 
     public void agregarMensaje(String mensaje) {
-        encolar(mensaje);
+        if (mensaje.length() > 200) {
+            mostrarPendientes();
+            agregarLinea(mensaje);
+        } else {
+            encolar(mensaje);
+        }
     }
 
     public void agregarError(String mensajeError) {
+        mostrarPendientes();
+        agregarLinea("[ERROR] " + mensajeError);
+    }
+
+    private void mostrarPendientes() {
         temporizador.stop();
         if (lineaActual != null) {
             areaSalida.append(lineaActual.substring(posicion));
@@ -91,12 +101,15 @@ public class OutputPanel extends JPanel {
             }
             areaSalida.append(colaMensajes.poll());
         }
+        lineaActual = null;
+        posicion = 0;
+    }
+
+    private void agregarLinea(String texto) {
         if (areaSalida.getDocument().getLength() > 0) {
             areaSalida.append(System.lineSeparator());
         }
-        areaSalida.append("[ERROR] " + mensajeError);
-        lineaActual = null;
-        posicion = 0;
+        areaSalida.append(texto);
     }
 
     public void limpiar() {

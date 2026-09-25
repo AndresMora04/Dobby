@@ -11,6 +11,25 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorFormatterTest {
     @Test
+    void diferenciaLimitesNumerosIndicesYErroresLexicos() {
+        String lexico = ErrorFormatter.formatearMensaje("Error lexico", "principal.dobby",
+            "Simbolo no reconocido: '@' (linea 2)");
+        assertTrue(lexico.contains("Revisa simbolos"));
+        String numero = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
+            "Resultado Entero fuera de rango (linea 3)");
+        assertTrue(numero.contains("El numero excede el rango"));
+        String indice = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
+            "Indice 3 fuera de rango (linea 4)");
+        assertTrue(indice.contains("Usa un indice Entero"));
+        String limite = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
+            "Se supero el limite de 100000 pasos de ejecucion (linea 5)");
+        assertTrue(limite.contains("caso base de la recursion"));
+        String sinValor = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
+            "La variable 'x' no ha sido inicializada (linea 6)");
+        assertTrue(sinValor.contains("Asigna un valor"));
+    }
+
+    @Test
     void sugiereInicializarEstructurasYRevisarSusCampos() {
         String inicializacion = ErrorFormatter.formatearMensaje("Error de ejecucion", "principal.dobby",
             "La estructura Varita no ha sido inicializada (linea 4)");

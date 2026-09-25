@@ -46,6 +46,7 @@ public class Controlador {
     private final GestorProyecto gestorProyecto;
     private final Timer revisionPrincipal;
     private int contadorSinTitulo;
+    private boolean ejecutando;
 
     public Controlador(MainView vista, FlowController flowController) {
         this.vista = vista;
@@ -211,6 +212,7 @@ public class Controlador {
     }
 
     public void manejarCompilar() {
+        if (ejecutando) return;
         vista.getPanelSalida().limpiar();
         try {
             Enlace enlace = enlazarPrograma();
@@ -232,6 +234,7 @@ public class Controlador {
     }
 
     public void manejarEjecutar() {
+        if (ejecutando) return;
         vista.getPanelSalida().limpiar();
         Enlace enlace;
         try {
@@ -241,7 +244,13 @@ public class Controlador {
             return;
         }
 
-        ResultadoEjecucion resultado = interprete.ejecutar(enlace.programa());
+        ResultadoEjecucion resultado;
+        ejecutando = true;
+        try {
+            resultado = interprete.ejecutar(enlace.programa());
+        } finally {
+            ejecutando = false;
+        }
         flowController.setUltimoResultado(resultado);
 
         boolean haySalida = resultado.getSalida() != null && !resultado.getSalida().isEmpty();

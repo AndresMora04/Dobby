@@ -7,6 +7,7 @@ import dobby.motor.enlazador.Enlazador;
 import dobby.motor.enlazador.ErrorEnlace;
 import dobby.motor.enlazador.ProveedorCodigo;
 import dobby.motor.lexer.Lexer;
+import dobby.motor.lexer.ErrorLexico;
 import dobby.motor.parser.Nodo;
 import dobby.motor.parser.NodoFuncion;
 import dobby.motor.parser.NodoPrograma;
@@ -83,6 +84,8 @@ public class GestorProyecto {
                 programa = new Parser().parsear(new Lexer().tokenizar(codigo));
             } catch (IOException e) {
                 throw new ErrorEnlace("Error de proyecto", "[" + etiqueta + "] No se pudo leer el archivo.");
+            } catch (ErrorLexico e) {
+                throw new ErrorEnlace("Error lexico", "[" + etiqueta + "] " + e.getMessage());
             } catch (RuntimeException e) {
                 throw new ErrorEnlace("Error de sintaxis", "[" + etiqueta + "] " + e.getMessage());
             }

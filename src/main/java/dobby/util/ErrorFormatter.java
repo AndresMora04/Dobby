@@ -44,6 +44,18 @@ public final class ErrorFormatter {
 
     private static String sugerencia(String tipo, String descripcion) {
         String mensaje = descripcion.toLowerCase(Locale.ROOT);
+        if (mensaje.contains("limite")) {
+            return "Reduce el tamano o anidamiento del programa; revisa la condicion de los ciclos y el caso base de la recursion.";
+        }
+        if ("Error lexico".equals(tipo)) {
+            return "Revisa simbolos, operadores completos, comillas, escapes y el cierre de los comentarios.";
+        }
+        if (mensaje.contains("fuera de rango") && !mensaje.contains("indice")) {
+            return "El numero excede el rango de Entero o Decimal; revisa el literal, la entrada y las operaciones.";
+        }
+        if (mensaje.contains("cancelada") || mensaje.contains("interrumpida")) {
+            return "La ejecucion se detuvo sin completar el programa. Puedes volver a ejecutarlo.";
+        }
         if ("Error de proyecto".equals(tipo)) {
             return "Revisa la carpeta del proyecto: debe existir un unico bloque Hogwarts() entre sus archivos .dobby.";
         }
@@ -61,6 +73,9 @@ public final class ErrorFormatter {
         }
         if (mensaje.contains("varita") && mensaje.contains("no ha sido inicializada")) {
             return "Crea un valor como Punto {x: 1, y: 2} antes de consultar o modificar sus campos.";
+        }
+        if (mensaje.contains("no ha sido inicializada")) {
+            return "Asigna un valor a la variable antes de leerla, imprimirla o usarla en una operacion.";
         }
         if (mensaje.contains("campo")) {
             return "Revisa los campos de Varita: sus nombres, sus tipos y que cada campo tenga un unico valor al crear la estructura.";

@@ -315,9 +315,9 @@ class VaritaTest {
         return Stream.of(
             Arguments.of("Alohomora p: Punto; Revelio p.x;", "no ha sido inicializada"),
             Arguments.of("Alohomora p: Punto; p.x=1;", "no ha sido inicializada"),
-            Arguments.of("Alohomora p: Punto; Alohomora q: Punto=p;", "No se recibio un valor"),
+            Arguments.of("Alohomora p: Punto; Alohomora q: Punto=p;", "no ha sido inicializada"),
             Arguments.of("Gringotts<Punto> a=[]; a[0].x=1;", "fuera de rango"),
-            Arguments.of("Alohomora x: Entero; Revelio Punto {x: x,y: 2};", "No se recibio un valor")
+            Arguments.of("Alohomora x: Entero; Revelio Punto {x: x,y: 2};", "variable 'x' no ha sido inicializada")
         );
     }
 

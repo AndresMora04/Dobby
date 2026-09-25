@@ -60,6 +60,40 @@ class ProyectoControladorTest {
     }
 
     @Test
+    void seRecuperaDeUnCicloInfinitoEnUnaFuncionImportada() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            vista.getPanelEditor().setTexto("Expecto valor(): Entero {\nImperio(Lumos) {}\nPatronum 1;\n}");
+            controlador.manejarEjecutar();
+            assertFalse(flujo.getUltimoResultado().isExito());
+            String error = flujo.getUltimoResultado().getErrores().getFirst();
+            assertTrue(error.contains("pasos de ejecucion"), error);
+            assertTrue(error.contains("[operaciones.dobby]"), error);
+            assertTrue(error.contains("linea 2"), error);
+            vista.getPanelEditor().setTexto("Expecto valor(): Entero { Patronum 42; }");
+            controlador.manejarEjecutar();
+            assertTrue(flujo.getUltimoResultado().isExito());
+            assertEquals("42", flujo.getUltimoResultado().getSalida().trim());
+        });
+    }
+
+    @Test
+    void muestraErrorLexicoYPermiteCorregirlo() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            vista.getPanelEditor().setTexto("Expecto valor(): Entero {\nPatronum 1; @\n}");
+            controlador.manejarCompilar();
+            assertFalse(flujo.getUltimoResultado().isExito());
+            String error = flujo.getUltimoResultado().getErrores().getFirst();
+            assertTrue(error.contains("Error lexico"), error);
+            assertTrue(error.contains("Archivo: operaciones.dobby"), error);
+            assertTrue(error.contains("Linea: 2"), error);
+            vista.getPanelEditor().setTexto("Expecto valor(): Entero { Patronum 3; }");
+            controlador.manejarEjecutar();
+            assertTrue(flujo.getUltimoResultado().isExito());
+            assertEquals("3", flujo.getUltimoResultado().getSalida().trim());
+        });
+    }
+
+    @Test
     void compilaYEjecutaDesdeUnaPestanaAuxiliar() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             controlador.manejarCompilar();

@@ -36,12 +36,14 @@ import java.util.Set;
 public class ValidadorSemantico {
     private static final String TIPO_ENTRADA = "<entrada>";
     private NodoFuncion funcion;
+    private int profundidadExpresion;
     private Map<String, NodoEstructura> estructuras = Map.of();
     private String archivo;
     private final Set<String> declaracionesPosibles = new HashSet<>();
 
     public void validar(NodoFuncion funcion) {
         this.funcion = funcion;
+        this.profundidadExpresion = 0;
         this.estructuras = funcion.getEstructuras();
         this.archivo = funcion.getArchivo();
         declaracionesPosibles.clear();
@@ -162,6 +164,18 @@ public class ValidadorSemantico {
     }
 
     private String tipoDe(Nodo nodo, Map<String, String> variables) {
+        if (profundidadExpresion >= 64) {
+            throw error("Se supero el limite de 64 niveles de expresion", nodo.getLinea());
+        }
+        profundidadExpresion++;
+        try {
+            return analizarTipo(nodo, variables);
+        } finally {
+            profundidadExpresion--;
+        }
+    }
+
+    private String analizarTipo(Nodo nodo, Map<String, String> variables) {
         return switch (nodo) {
             case null -> "Obliviate";
             case NodoLiteral n -> {

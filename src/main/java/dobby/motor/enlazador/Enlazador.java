@@ -1,6 +1,7 @@
 package dobby.motor.enlazador;
 
 import dobby.motor.lexer.Lexer;
+import dobby.motor.lexer.ErrorLexico;
 import dobby.motor.lexer.Token;
 import dobby.motor.parser.Nodo;
 import dobby.motor.parser.NodoFuncion;
@@ -61,6 +62,8 @@ public class Enlazador {
                 tokensEntrada = Math.max(0, tokens.size() - 1);
             }
             return parser.parsear(tokens);
+        } catch (ErrorLexico e) {
+            throw new ErrorEnlace("Error lexico", prefijo(etiqueta) + e.getMessage());
         } catch (ErrorEnlace e) {
             throw new ErrorEnlace(e.getTipo(), prefijo(etiqueta) + e.getMessage());
         } catch (RuntimeException e) {
@@ -141,6 +144,9 @@ public class Enlazador {
     }
 
     private Modulo resolverImportacion(NodoImportacion importacion, String etiqueta, Path carpeta) {
+        if (pila.size() >= 64) {
+            throw error(etiqueta, "Se supero el limite de 64 niveles de importaciones", importacion.getLinea());
+        }
         if (carpeta == null) {
             throw error(etiqueta, "Guarda el archivo o abre un proyecto para poder usar Floo", importacion.getLinea());
         }
@@ -149,6 +155,9 @@ public class Enlazador {
             ruta = normalizar(carpeta.resolve(importacion.getArchivo()));
         } catch (InvalidPathException e) {
             throw error(etiqueta, "La ruta '" + importacion.getArchivo() + "' no es valida", importacion.getLinea());
+        }
+        if (importacion.getArchivo().isBlank() || ruta.getFileName() == null) {
+            throw error(etiqueta, "La ruta de Floo debe indicar un archivo", importacion.getLinea());
         }
         String nombreArchivo = ruta.getFileName().toString();
 

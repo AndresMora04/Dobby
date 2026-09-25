@@ -308,6 +308,74 @@ se rechazan para evitar mezclar tipos incompatibles.
 Pruebas: `VaritaTest`, los ejemplos del editor y la integración de proyectos,
 ejecutables con `mvn test`.
 
+## Robustez y errores
+
+El compilador distingue errores léxicos, de sintaxis, semánticos y de
+importación. La salida indica archivo, línea, descripción y posible causa.
+Un error detiene esa ejecución, conserva lo impreso antes del fallo y permite
+corregir el programa y volver a ejecutarlo.
+
+- Los símbolos desconocidos y operadores incompletos, como `&` o `|`, ya
+  no se ignoran. Los operadores lógicos completos son `&&` y `||`.
+- Se admiten comentarios `// hasta fin de línea` y `/* de varias líneas */`.
+  Los comentarios de bloque no se anidan. Los textos y comentarios sin cerrar
+  reportan la línea donde comenzaron.
+- Dentro de textos se admiten `\"`, `\\`, `\n`, `\r` y `\t`.
+  Para rutas de `Floo`, se recomienda `"lib/tipos.dobby"`; una barra
+  invertida literal debe escribirse como `\\`.
+- `Entero` admite desde `-2147483648` hasta `2147483647`.
+  Los literales y operaciones fuera de rango producen un error, sin dar la
+  vuelta al rango numérico. `Decimal` no admite `NaN` ni infinito.
+- Los números se comparan por su valor: `1 == 1.0` produce `Lumos`.
+  Los arreglos y estructuras siguen comparándose por referencia.
+- Leer una variable sin inicializar produce un error. `Obliviate` mantiene
+  su valor nulo. Una declaración dentro de un ciclo se reinicia en cada vuelta;
+  no conserva el valor de la vuelta anterior.
+- Cancelar `Legilimens` detiene la ejecución. Una entrada inválida para el
+  tipo esperado se reporta como error, sin mostrar una excepción de Java.
+
+### Límites de protección
+
+Estos límites son fijos y están pensados para programas educativos:
+
+| Recurso | Límite |
+|---|---|
+| Fuente por archivo | 1 000 000 caracteres y 100 000 tokens |
+| Anidamiento del parser | 64 niveles, contando bloques y expresiones |
+| Profundidad de expresiones en validación | 64 niveles |
+| Cadena de importaciones | 64 archivos con ruta en la cadena activa |
+| Ejecución | 100 000 pasos, contando sentencias, expresiones y recorrido de salida |
+| Llamadas simultáneas | 64, incluyendo `Hogwarts` |
+| Expresiones activas en ejecución | 128 niveles |
+| Recorrido de arreglos y estructuras al imprimir | 64 niveles |
+| Texto individual | 65 536 caracteres |
+| Salida acumulada | 20 000 caracteres, incluidos saltos de línea |
+
+Superar un límite produce un error controlado. El límite de pasos puede
+detener también un programa finito muy grande; no es una detección matemática
+de ciclos infinitos. Los contadores se reinician al ejecutar de nuevo.
+La ejecución sigue siendo síncrona; estos límites no sustituyen un entorno
+aislado ni una ejecución en segundo plano.
+
+Las salidas de más de 200 caracteres se muestran completas, sin esperar la
+animación carácter por carácter.
+
+Prueba manual, en un archivo independiente o como único principal del proyecto:
+
+```text
+Hogwarts() {
+    Revelio "Antes del ciclo";
+    Imperio (Lumos) {}
+}
+```
+
+Se conserva `Antes del ciclo` y aparece el error del límite de pasos en la
+línea del `Imperio`. Reemplaza el ciclo por `Revelio "Terminado";` y vuelve a
+ejecutar para comprobar la recuperación.
+
+Pruebas automatizadas: `RobustezTest` y pruebas de integración del controlador,
+proyectos, formato de errores y panel de salida. Ejecutar con `mvn clean test`.
+
 ## Proyectos y archivo principal
 
 - **Archivo > Nuevo proyecto...** crea una carpeta nueva con un
@@ -494,3 +562,7 @@ longitud, funciones y pruebas automatizadas.
 campos, tipos anidados, arreglos, funciones, importaciones y pruebas.
 
 Siguen pendientes la lectura de voz y los demás ajustes de la entrega final.
+
+El compilador y el intérprete incluyen validación léxica, comentarios y escapes,
+controles numéricos y de inicialización, límites de ejecución y pruebas de
+recuperación tras errores.
