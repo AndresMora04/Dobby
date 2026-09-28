@@ -11,6 +11,8 @@ import dobby.motor.interprete.Interprete;
 import dobby.motor.interprete.ResultadoEjecucion;
 import dobby.util.FileUtil;
 import dobby.util.ErrorFormatter;
+import dobby.util.LectorVoz;
+import dobby.util.TraductorCodigo;
 import dobby.vista.DialogoNombre;
 import dobby.vista.DialogoOpciones;
 import dobby.vista.MainView;
@@ -54,7 +56,10 @@ public class Controlador {
         this.gestorProyecto = new GestorProyecto(this::leerCodigo);
         this.revisionPrincipal = new Timer(500, e -> actualizarPrincipal());
         this.revisionPrincipal.setRepeats(false);
-        this.interprete = new Interprete(mensaje -> JOptionPane.showInputDialog(vista, mensaje, "Legilimens", JOptionPane.QUESTION_MESSAGE));
+        this.interprete = new Interprete(mensaje -> {
+            LectorVoz.leer("Legilimens. " + mensaje);
+            return JOptionPane.showInputDialog(vista, mensaje, "Legilimens", JOptionPane.QUESTION_MESSAGE);
+        });
         inicializarListeners();
         crearSinTitulo("");
     }
@@ -146,6 +151,33 @@ public class Controlador {
             : "Archivos .dobby encontrados: " + total);
     }
 
+    public void manejarDetenerVoz() {
+        LectorVoz.detener();
+    }
+
+    public void manejarRepetirVoz() {
+        LectorVoz.repetir();
+    }
+
+    public void manejarAlternarVoz(boolean activo) {
+        LectorVoz.setHabilitado(activo);
+    }
+
+    public void manejarLeerLinea() {
+        String codigo = vista.getPanelEditor().getTexto();
+        int linea = vista.getPanelEditor().getLineaActual();
+        LectorVoz.leer(TraductorCodigo.lineaATextoHablado(codigo, linea));
+    }
+
+    public void manejarLeerArchivo() {
+        String codigo = vista.getPanelEditor().getTexto();
+        if (codigo == null || codigo.isBlank()) {
+            LectorVoz.leer("El archivo esta vacio.");
+            return;
+        }
+        LectorVoz.leer(TraductorCodigo.aTextoHablado(codigo));
+    }
+
     public void manejarCerrarProyecto() {
         revisionPrincipal.stop();
         flowController.setProyectoActivo(null);
@@ -222,12 +254,20 @@ public class Controlador {
             resultado.setErrores(new ArrayList<>());
             flowController.setUltimoResultado(resultado);
 
-            vista.getPanelSalida().agregarMensaje("Compilacion exitosa: " + nombreArchivoEntrada());
-            vista.getPanelSalida().agregarMensaje("Tokens encontrados: " + enlace.tokens());
-            vista.getPanelSalida().agregarMensaje("Declaraciones principales: " + enlace.programa().getSentencias().size());
+            String mensajeArchivo = "Compilacion exitosa: " + nombreArchivoEntrada();
+            String mensajeTokens = "Tokens encontrados: " + enlace.tokens();
+            String mensajeDeclaraciones = "Declaraciones principales: " + enlace.programa().getSentencias().size();
+            vista.getPanelSalida().agregarMensaje(mensajeArchivo);
+            vista.getPanelSalida().agregarMensaje(mensajeTokens);
+            vista.getPanelSalida().agregarMensaje(mensajeDeclaraciones);
+            StringBuilder resumenVoz = new StringBuilder(mensajeArchivo).append(". ")
+                .append(mensajeTokens).append(". ").append(mensajeDeclaraciones).append(".");
             if (enlace.archivosImportados() > 0) {
-                vista.getPanelSalida().agregarMensaje("Archivos importados: " + enlace.archivosImportados());
+                String mensajeImportados = "Archivos importados: " + enlace.archivosImportados();
+                vista.getPanelSalida().agregarMensaje(mensajeImportados);
+                resumenVoz.append(" ").append(mensajeImportados).append(".");
             }
+            LectorVoz.leer(resumenVoz.toString());
         } catch (RuntimeException e) {
             registrarError(e);
         }
@@ -255,14 +295,20 @@ public class Controlador {
 
         boolean haySalida = resultado.getSalida() != null && !resultado.getSalida().isEmpty();
         if (resultado.isExito()) {
-            vista.getPanelSalida().agregarMensaje("Ejecucion exitosa: " + nombreArchivoEntrada());
+            String mensajeEjecucion = "Ejecucion exitosa: " + nombreArchivoEntrada();
+            vista.getPanelSalida().agregarMensaje(mensajeEjecucion);
+            String salidaPrograma = haySalida ? resultado.getSalida().stripTrailing() : "";
+            LectorVoz.leer(salidaPrograma.isEmpty() ? mensajeEjecucion + "." : mensajeEjecucion + ". " + salidaPrograma);
         }
         if (haySalida) {
             vista.getPanelSalida().agregarMensaje(resultado.getSalida().stripTrailing());
         }
         for (String error : resultado.getErrores()) {
-            vista.getPanelSalida().agregarError(
-                ErrorFormatter.formatearMensaje("Error de ejecucion", nombreArchivoEntrada(), error));
+            String archivoEntrada = nombreArchivoEntrada();
+            String mensajeError = ErrorFormatter.formatearMensaje("Error de ejecucion", archivoEntrada, error);
+            vista.getPanelSalida().agregarError(mensajeError);
+            leerErrorConLinea(mensajeError, ErrorFormatter.extraerArchivo(archivoEntrada, error),
+                ErrorFormatter.extraerLinea(archivoEntrada, error));
         }
     }
 
@@ -301,13 +347,43 @@ public class Controlador {
 
     private void registrarError(RuntimeException error) {
         String tipo = error instanceof ErrorEnlace enlace ? enlace.getTipo() : "Error de compilacion";
-        String mensaje = ErrorFormatter.formatearMensaje(tipo, nombreArchivoEntrada(), error.getMessage());
+        String archivoEntrada = nombreArchivoEntrada();
+        String mensaje = ErrorFormatter.formatearMensaje(tipo, archivoEntrada, error.getMessage());
         ResultadoEjecucion resultado = new ResultadoEjecucion();
         resultado.setExito(false);
         resultado.setSalida("");
         resultado.setErrores(List.of(mensaje));
         flowController.setUltimoResultado(resultado);
         vista.getPanelSalida().agregarError(mensaje);
+        leerErrorConLinea(mensaje, ErrorFormatter.extraerArchivo(archivoEntrada, error.getMessage()),
+            ErrorFormatter.extraerLinea(archivoEntrada, error.getMessage()));
+    }
+
+    private String textoLineaDelError(String archivoError, int linea) {
+        if (linea <= 0 || archivoError == null) {
+            return null;
+        }
+        String textoArchivo;
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto != null) {
+            ArchivoDobby principal = proyecto.getArchivoPrincipal();
+            if (principal == null || !archivoError.equals(proyecto.getCarpeta().relativize(principal.getRuta()).toString())) {
+                return null;
+            }
+            textoArchivo = textoDe(principal);
+        } else {
+            ArchivoDobby activo = flowController.getArchivoActivo();
+            if (activo == null || !archivoError.equals(activo.getNombre())) {
+                return null;
+            }
+            textoArchivo = textoDe(activo);
+        }
+        return "Linea " + linea + ": " + TraductorCodigo.lineaATextoHablado(textoArchivo, linea);
+    }
+
+    private void leerErrorConLinea(String mensaje, String archivoError, int linea) {
+        String textoLinea = textoLineaDelError(archivoError, linea);
+        LectorVoz.leer(textoLinea != null ? mensaje + " " + textoLinea : mensaje);
     }
 
     private String nombreArchivoEntrada() {

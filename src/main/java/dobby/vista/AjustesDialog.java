@@ -1,9 +1,11 @@
 package dobby.vista;
 
+import dobby.util.LectorVoz;
 import dobby.util.TemaManager;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
@@ -63,6 +65,26 @@ public class AjustesDialog extends ModalDialog {
             boton.setBounds(x, y, ANCHO_BOTON, ALTO_BOTON);
             x += ANCHO_BOTON + espacio;
             panel.add(boton);
+        }
+
+        JCheckBox casillaVoz = new JCheckBox("Leer los resultados de Compilar/Ejecutar en voz alta");
+        casillaVoz.setSelected(LectorVoz.isHabilitado());
+        casillaVoz.setOpaque(false);
+        casillaVoz.setForeground(new Color(225, 218, 205));
+        casillaVoz.setFont(new Font("SansSerif", Font.PLAIN, 15));
+        casillaVoz.setFocusPainted(false);
+        casillaVoz.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        casillaVoz.addActionListener(e -> LectorVoz.setHabilitado(casillaVoz.isSelected()));
+        int anchoCasilla = 460;
+        casillaVoz.setBounds((ANCHO_CONTENIDO - anchoCasilla) / 2, y + ALTO_BOTON + 30, anchoCasilla, 26);
+        panel.add(casillaVoz);
+
+        if (!LectorVoz.disponible()) {
+            JLabel avisoVoz = new JLabel("No se encontro un lector de voz en este sistema.", SwingConstants.CENTER);
+            avisoVoz.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            avisoVoz.setForeground(new Color(170, 130, 120));
+            avisoVoz.setBounds(0, y + ALTO_BOTON + 58, ANCHO_CONTENIDO, 20);
+            panel.add(avisoVoz);
         }
 
         return panel;

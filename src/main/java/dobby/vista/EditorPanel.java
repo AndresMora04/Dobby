@@ -3,6 +3,7 @@ package dobby.vista;
 import dobby.motor.lexer.Lexer;
 import dobby.motor.lexer.TipoToken;
 import dobby.motor.lexer.Token;
+import dobby.util.LectorVoz;
 import dobby.util.TemaManager;
 
 import javax.swing.BorderFactory;
@@ -30,12 +31,14 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -141,6 +144,7 @@ public class EditorPanel extends JPanel {
             public void insertUpdate(DocumentEvent e) {
                 resaltar();
                 notificarCambio();
+                anunciarLineaPorEnter(e);
             }
 
             @Override
@@ -154,6 +158,12 @@ public class EditorPanel extends JPanel {
             }
         });
         areaTexto.addCaretListener(e -> actualizarLineaActual());
+        areaTexto.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                anunciarLineaPorClic();
+            }
+        });
 
         panelNumeros = new PanelNumerosLinea();
 
@@ -172,8 +182,12 @@ public class EditorPanel extends JPanel {
                 return;
             }
             ImageIcon icono = new ImageIcon(in.readAllBytes());
-            Image escalada = icono.getImage().getScaledInstance(32, 32, Image.SCALE_SMOOTH);
-            Cursor cursor = Toolkit.getDefaultToolkit().createCustomCursor(escalada, new Point(28, 4), "cursorVarita");
+            BufferedImage volteada = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = volteada.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2.drawImage(icono.getImage(), 32, 0, -32, 32, null);
+            g2.dispose();
+            Cursor cursor = Toolkit.getDefaultToolkit().createCustomCursor(volteada, new Point(4, 4), "cursorVarita");
             areaTexto.setCursor(cursor);
         } catch (IOException e) {
         }
@@ -190,6 +204,28 @@ public class EditorPanel extends JPanel {
         } catch (BadLocationException e) {
         }
         panelNumeros.repaint();
+    }
+
+    private void anunciarLineaPorClic() {
+        if (!cargandoTexto && LectorVoz.isHabilitado()) {
+            LectorVoz.leer("Línea " + getLineaActual() + ".");
+        }
+    }
+
+    private void anunciarLineaPorEnter(DocumentEvent e) {
+        if (cargandoTexto || !LectorVoz.isHabilitado()) {
+            return;
+        }
+        try {
+            String insertado = areaTexto.getDocument().getText(e.getOffset(), e.getLength());
+            if (!"\n".equals(insertado)) {
+                return;
+            }
+            Element raiz = areaTexto.getDocument().getDefaultRootElement();
+            int linea = raiz.getElementIndex(e.getOffset() + e.getLength()) + 1;
+            LectorVoz.leer("Línea " + linea + ".");
+        } catch (BadLocationException ex) {
+        }
     }
 
     private void resaltar() {
@@ -283,6 +319,11 @@ public class EditorPanel extends JPanel {
 
     public void setPosicionCursor(int posicion) {
         areaTexto.setCaretPosition(Math.max(0, Math.min(posicion, areaTexto.getDocument().getLength())));
+    }
+
+    public int getLineaActual() {
+        Element raiz = areaTexto.getDocument().getDefaultRootElement();
+        return raiz.getElementIndex(areaTexto.getCaretPosition()) + 1;
     }
 
     public void enfocar() {

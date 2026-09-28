@@ -1,5 +1,6 @@
 package dobby.vista;
 
+import dobby.util.LectorVoz;
 import dobby.util.TemaManager;
 
 import javax.swing.BorderFactory;
@@ -47,6 +48,9 @@ public final class DialogoNombre {
         });
         campo.registerKeyboardAction(e -> aceptar.run(), KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), JComponent.WHEN_FOCUSED);
         campo.registerKeyboardAction(e -> cancelar.run(), KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_FOCUSED);
+
+        String valorHablado = valorInicial == null || valorInicial.isBlank() ? "" : " Valor sugerido: " + valorInicial + ".";
+        LectorVoz.leer(titulo + ". " + etiqueta + "." + valorHablado);
         dialogo[0].setVisible(true);
         return resultado[0];
     }

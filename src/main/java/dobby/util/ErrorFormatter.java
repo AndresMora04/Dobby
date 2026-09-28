@@ -19,7 +19,10 @@ public final class ErrorFormatter {
             + "Posible causa: " + textoO(causaProbable, "Revisa la instruccion indicada.");
     }
 
-    public static String formatearMensaje(String tipo, String nombreArchivo, String mensaje) {
+    private record Ubicacion(String archivo, int linea, String descripcion) {
+    }
+
+    private static Ubicacion analizar(String nombreArchivo, String mensaje) {
         String descripcion = textoO(mensaje, "No se recibio una descripcion del error.");
         int linea = 0;
         if (descripcion.startsWith("[") && descripcion.contains("] ")) {
@@ -39,7 +42,20 @@ public final class ErrorFormatter {
                 descripcion += " (token '" + ubicacion.group(3) + "')";
             }
         }
-        return formatear(tipo, nombreArchivo, linea, descripcion, sugerencia(tipo, descripcion));
+        return new Ubicacion(nombreArchivo, linea, descripcion);
+    }
+
+    public static String formatearMensaje(String tipo, String nombreArchivo, String mensaje) {
+        Ubicacion u = analizar(nombreArchivo, mensaje);
+        return formatear(tipo, u.archivo(), u.linea(), u.descripcion(), sugerencia(tipo, u.descripcion()));
+    }
+
+    public static String extraerArchivo(String nombreArchivo, String mensaje) {
+        return analizar(nombreArchivo, mensaje).archivo();
+    }
+
+    public static int extraerLinea(String nombreArchivo, String mensaje) {
+        return analizar(nombreArchivo, mensaje).linea();
     }
 
     private static String sugerencia(String tipo, String descripcion) {

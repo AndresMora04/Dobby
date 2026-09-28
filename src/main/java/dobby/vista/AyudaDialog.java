@@ -387,6 +387,55 @@ public class AyudaDialog extends ModalDialog {
               o ejecutar solamente el archivo activo.
             """);
 
+        temas.put("Accesibilidad y voz", """
+            Dobby puede leer en voz alta, con el motor de voz del sistema
+            operativo (sin librerías externas), pensado para personas con
+            discapacidad visual. Está apagado por defecto.
+
+            - Proyecto > Leer resultados en voz alta (Ctrl + M): activa o
+              desactiva la lectura automática al Compilar y Ejecutar. Lee
+              exactamente lo mismo que aparece en el panel de salida:
+              archivo, tokens, declaraciones, salida del programa, o el
+              error completo (tipo, archivo, línea, descripción, causa).
+            - Si un error tiene línea conocida en el archivo activo (o el
+              principal del proyecto), después del mensaje se lee también
+              esa línea de código, para que no haga falta ver la pantalla.
+            - Las lecturas nunca se acumulan: cada vez que hay algo nuevo que
+              decir, corta lo que esté sonando y empieza de una con lo nuevo.
+              No hay que esperar a que termine una lectura para que llegue
+              la siguiente.
+            - Proyecto > Detener voz: corta de inmediato la lectura en curso
+              sin decir nada nuevo, sin apagar la función. Apagar el
+              interruptor (Ctrl + M) también corta lo que esté sonando.
+            - Proyecto > Repetir última lectura (Ctrl + R): vuelve a decir
+              exactamente lo último que se leyó, útil si no se alcanzó a
+              escuchar bien la primera vez.
+            - Proyecto > Leer línea actual (Ctrl + L): lee la línea donde
+              está el cursor en el editor.
+            - Proyecto > Leer archivo completo (Ctrl + Shift + L): lee todo
+              el archivo activo.
+            - Con la voz activa, un click en el editor o presionar Enter
+              anuncia el número de línea donde queda el cursor ("Línea 5."),
+              para orientarse sin ver la pantalla.
+            - Los cuadros de diálogo (guardar cambios, sobrescribir, nuevo
+              archivo, renombrar, eliminar, Legilimens) anuncian su título,
+              su pregunta y sus opciones apenas se abren, y se pueden cerrar
+              con Escape en cualquier momento, sin usar el mouse.
+
+            Para que el código se entienda hablado, no se lee tal cual: se
+            usa el mismo analizador léxico del lenguaje para traducir cada
+            símbolo a palabras. Por ejemplo:
+
+                Revelio "Hola";
+
+            se lee como "Revelio, comillas, Hola, comillas, punto y coma".
+            Cosas como { } ( ) ; : == != && || se leen siempre con su
+            nombre, nunca se saltan.
+
+            Si el sistema no tiene un lector de voz instalado, la app sigue
+            funcionando normal, simplemente sin audio (se avisa en Ajustes).
+            """);
+
         temas.put("Atajos de teclado", """
             Ctrl + N            Nuevo archivo
             Ctrl + Shift + N    Nuevo proyecto
@@ -398,6 +447,11 @@ public class AyudaDialog extends ModalDialog {
             F6                  Compilar
             F5                  Ejecutar
             F1                  Esta ayuda
+            Ctrl + M            Leer o silenciar resultados en voz alta
+            Ctrl + L            Leer en voz alta la línea actual
+            Ctrl + Shift + L    Leer en voz alta el archivo completo
+            Ctrl + R            Repetir la última lectura en voz alta
+            Escape              Cerrar el cuadro de diálogo abierto
             """);
 
         temas.put("Robustez y limites", """

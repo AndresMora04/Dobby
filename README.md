@@ -40,9 +40,29 @@ estética): **accesibilidad para personas con discapacidad visual**.
 
 - **Texto-a-voz (TTS)**: al compilar o ejecutar, además de mostrarse en el
   panel de salida, el resultado (éxito, error de sintaxis/semántico/de
-  ejecución) se lee en voz alta invocando el motor de voz del sistema
-  operativo (`System.Speech` vía PowerShell en Windows, `espeak` en Linux),
-  sin agregar dependencias externas al proyecto (JDK estándar + `ProcessBuilder`).
+  ejecución, incluida la línea exacta del error) se lee en voz alta
+  invocando el motor de voz del sistema operativo (`System.Speech` vía
+  PowerShell en Windows con selección automática de voz en español,
+  `espeak` en Linux, `say` en macOS), sin agregar dependencias externas al
+  proyecto (JDK estándar + `ProcessBuilder`). Apagado por defecto,
+  activable con Ctrl+M.
+- **Leer código en voz alta**: además del resultado, se puede pedir que
+  lea la línea actual (Ctrl+L) o el archivo completo (Ctrl+Shift+L). El
+  código no se lee tal cual — se tokeniza con el mismo `Lexer` del
+  lenguaje y cada símbolo (`{`, `}`, `;`, `==`, `&&`, etc.) se traduce a su
+  nombre en español, para que la estructura del programa se entienda
+  hablada y no solo como una lista de palabras sueltas. Esa misma
+  traducción se aplica también a los mensajes de error, así que un
+  `'{'` dentro de la descripción del error también se escucha.
+- **Orientación y control de la lectura**: un click en el editor o
+  presionar Enter anuncia en qué línea quedó el cursor, sin necesidad de
+  ver la pantalla. Las lecturas nunca se acumulan — cada mensaje nuevo
+  corta al instante al anterior — y se puede repetir la última lectura
+  (Ctrl+R) o detenerla (menú Proyecto) en cualquier momento.
+- **Diálogos accesibles**: los cuadros de "cambios sin guardar",
+  "sobrescribir archivo", "nuevo archivo", "renombrar", "eliminar" y el
+  de `Legilimens` (entrada de datos) anuncian su título, su pregunta y
+  sus opciones apenas se abren, y se cierran con Escape sin usar el mouse.
 - **Navegación completa por teclado**: Compilar, Ejecutar, Nuevo, Abrir,
   Guardar y cambio de archivo activo deben poder invocarse sin usar el mouse
   (mnemonics/atajos).
@@ -561,7 +581,15 @@ longitud, funciones y pruebas automatizadas.
 `Varita` está implementado con creación de valores, lectura y escritura de
 campos, tipos anidados, arreglos, funciones, importaciones y pruebas.
 
-Siguen pendientes la lectura de voz y los demás ajustes de la entrega final.
+La lectura de voz (TTS) está implementada: al compilar o ejecutar, el
+resultado se lee en voz alta con el motor de voz del sistema operativo
+(`System.Speech` vía PowerShell en Windows, `espeak` en Linux, `say` en
+macOS), sin librerías externas. Se puede desactivar desde Ajustes, y si el
+sistema no tiene un lector de voz disponible la app sigue funcionando
+normalmente, solo sin audio.
+
+Siguen pendientes la navegación completa por teclado (mnemonics) y los
+demás ajustes de la entrega final.
 
 El compilador y el intérprete incluyen validación léxica, comentarios y escapes,
 controles numéricos y de inicialización, límites de ejecución y pruebas de

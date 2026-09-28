@@ -1,12 +1,14 @@
 package dobby.vista;
 
 import dobby.controlador.Controlador;
+import dobby.util.LectorVoz;
 import dobby.util.TemaManager;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -19,6 +21,8 @@ import javax.swing.ImageIcon;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 import javax.swing.border.LineBorder;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -347,6 +351,31 @@ public class MainView extends JFrame {
         JMenu menuProyecto = estilizarMenu(new JMenu("Proyecto"));
         menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar()));
         menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar()));
+        menuProyecto.addSeparator();
+        JCheckBoxMenuItem itemVoz = new JCheckBoxMenuItem("Leer resultados en voz alta");
+        estilizarItem(itemVoz);
+        itemVoz.setSelected(LectorVoz.isHabilitado());
+        itemVoz.setAccelerator(atajo(KeyEvent.VK_M, false));
+        itemVoz.addActionListener(e -> controlador.manejarAlternarVoz(itemVoz.isSelected()));
+        menuProyecto.add(itemVoz);
+        menuProyecto.add(crearItem("Detener voz", null, () -> controlador.manejarDetenerVoz()));
+        menuProyecto.add(crearItem("Repetir última lectura", atajo(KeyEvent.VK_R, false), () -> controlador.manejarRepetirVoz()));
+        menuProyecto.add(crearItem("Leer línea actual", atajo(KeyEvent.VK_L, false), () -> controlador.manejarLeerLinea()));
+        menuProyecto.add(crearItem("Leer archivo completo", atajo(KeyEvent.VK_L, true), () -> controlador.manejarLeerArchivo()));
+        menuProyecto.addMenuListener(new MenuListener() {
+            @Override
+            public void menuSelected(MenuEvent e) {
+                itemVoz.setSelected(LectorVoz.isHabilitado());
+            }
+
+            @Override
+            public void menuDeselected(MenuEvent e) {
+            }
+
+            @Override
+            public void menuCanceled(MenuEvent e) {
+            }
+        });
         menuProyecto.addSeparator();
         menuProyecto.add(crearItem("Actualizar archivos", null, () -> controlador.manejarRefrescarProyecto()));
         menuProyecto.add(crearItem("Cerrar proyecto", null, () -> controlador.manejarCerrarProyecto()));

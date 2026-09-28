@@ -16,7 +16,6 @@ import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GradientPaint;
-import java.awt.Image;
 import java.awt.Point;
 import java.awt.RadialGradientPaint;
 import java.awt.RenderingHints;
@@ -27,6 +26,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Ellipse2D;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -127,8 +127,12 @@ public class BienvenidaPanel extends JPanel {
         }
         Toolkit toolkit = Toolkit.getDefaultToolkit();
         int tam = 32;
-        Image escalada = iconoVarita.getImage().getScaledInstance(tam, tam, Image.SCALE_SMOOTH);
-        Cursor cursorVarita = toolkit.createCustomCursor(escalada, new Point(tam - 4, 4), "cursorVarita");
+        BufferedImage volteada = new BufferedImage(tam, tam, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = volteada.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.drawImage(iconoVarita.getImage(), tam, 0, -tam, tam, null);
+        g2.dispose();
+        Cursor cursorVarita = toolkit.createCustomCursor(volteada, new Point(4, 4), "cursorVarita");
         setCursor(cursorVarita);
     }
 

@@ -1,5 +1,7 @@
 package dobby.vista;
 
+import dobby.util.LectorVoz;
+
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
@@ -7,6 +9,8 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Window;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public final class DialogoOpciones {
     private static final int ANCHO_TARJETA = 600;
@@ -19,19 +23,28 @@ public final class DialogoOpciones {
     public static int elegir(Window propietario, String titulo, String[] mensaje, String... opciones) {
         int[] eleccion = {-1};
         ModalDialog[] dialogo = new ModalDialog[1];
+        BotonBarra[] botones = new BotonBarra[opciones.length];
 
         int altoContenido = mensaje.length * ALTO_LINEA + 36 + 40;
-        JPanel contenido = construirContenido(mensaje, opciones, indice -> {
+        JPanel contenido = construirContenido(mensaje, opciones, botones, indice -> {
             eleccion[0] = indice;
             dialogo[0].dispose();
         }, ANCHO_TARJETA - 48);
 
         dialogo[0] = new ModalDialog(propietario, titulo, ANCHO_TARJETA, altoContenido + 88, contenido);
+        dialogo[0].addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                botones[botones.length - 1].requestFocusInWindow();
+            }
+        });
+
+        LectorVoz.leer(titulo + ". " + String.join(" ", mensaje) + " Opciones: " + String.join(", ", opciones) + ".");
         dialogo[0].setVisible(true);
         return eleccion[0];
     }
 
-    private static JPanel construirContenido(String[] mensaje, String[] opciones,
+    private static JPanel construirContenido(String[] mensaje, String[] opciones, BotonBarra[] botones,
                                              java.util.function.IntConsumer alElegir, int anchoContenido) {
         JPanel panel = new JPanel(null);
         panel.setOpaque(false);
@@ -46,7 +59,6 @@ public final class DialogoOpciones {
             y += ALTO_LINEA;
         }
 
-        BotonBarra[] botones = new BotonBarra[opciones.length];
         int anchoTotal = SEPARACION_BOTONES * (opciones.length - 1);
         for (int i = 0; i < opciones.length; i++) {
             final int indice = i;

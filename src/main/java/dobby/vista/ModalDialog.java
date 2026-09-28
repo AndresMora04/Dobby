@@ -6,6 +6,7 @@ import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 
 import java.awt.BasicStroke;
@@ -19,6 +20,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.GradientPaint;
 import java.awt.RenderingHints;
 import java.awt.Window;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.InputStream;
@@ -130,6 +132,9 @@ public class ModalDialog extends JDialog {
 
         contenido.setBounds(24 + MARGEN_RESPLANDOR, 64 + MARGEN_RESPLANDOR, anchoTarjeta - 48, altoTarjeta - 88);
         tarjeta.add(contenido);
+
+        getRootPane().registerKeyboardAction(e -> dispose(),
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
     }
 
     protected static String sinTildes(String texto) {
