@@ -1,0 +1,19 @@
+Floo Alumno desde "alumnos.dobby";
+
+Expecto promedio(alumno: Alumno): Decimal {
+    Patronum (alumno.nota1 + alumno.nota2 + alumno.nota3) / 3;
+}
+
+Expecto aprobo(prom: Decimal): Booleano {
+    Protego (prom >= 70) {
+        Patronum Lumos;
+    }
+    Patronum Nox;
+}
+
+Expecto factorial(n: Entero): Entero {
+    Protego (n <= 1) {
+        Patronum 1;
+    }
+    Patronum n * Accio factorial(n - 1);
+}

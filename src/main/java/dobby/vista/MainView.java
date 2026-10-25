@@ -314,6 +314,12 @@ public class MainView extends JFrame {
         return item;
     }
 
+    private JMenuItem crearItem(String texto, KeyStroke atajo, Runnable accion, char mnemonico) {
+        JMenuItem item = crearItem(texto, atajo, accion);
+        item.setMnemonic(mnemonico);
+        return item;
+    }
+
     private KeyStroke atajo(int tecla, boolean mayuscula) {
         int mascara = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
         return KeyStroke.getKeyStroke(tecla, mayuscula ? mascara | InputEvent.SHIFT_DOWN_MASK : mascara);
@@ -327,41 +333,48 @@ public class MainView extends JFrame {
         menuBar.setBorder(BorderFactory.createEmptyBorder());
 
         JMenu menuArchivo = estilizarMenu(new JMenu("Archivo"));
-        menuArchivo.add(crearItem("Nuevo proyecto...", atajo(KeyEvent.VK_N, true), () -> controlador.manejarNuevoProyecto()));
-        menuArchivo.add(crearItem("Nuevo", atajo(KeyEvent.VK_N, false), () -> controlador.manejarNuevoArchivo()));
-        menuArchivo.add(crearItem("Abrir archivo...", atajo(KeyEvent.VK_O, false), () -> controlador.manejarAbrir()));
-        menuArchivo.add(crearItem("Abrir carpeta...", atajo(KeyEvent.VK_O, true), () -> controlador.manejarAbrirCarpeta()));
+        menuArchivo.setMnemonic('A');
+        menuArchivo.add(crearItem("Nuevo proyecto...", atajo(KeyEvent.VK_N, true), () -> controlador.manejarNuevoProyecto(), 'P'));
+        menuArchivo.add(crearItem("Nuevo", atajo(KeyEvent.VK_N, false), () -> controlador.manejarNuevoArchivo(), 'N'));
+        menuArchivo.add(crearItem("Abrir archivo...", atajo(KeyEvent.VK_O, false), () -> controlador.manejarAbrir(), 'V'));
+        menuArchivo.add(crearItem("Abrir carpeta...", atajo(KeyEvent.VK_O, true), () -> controlador.manejarAbrirCarpeta(), 'C'));
         menuArchivo.addSeparator();
-        menuArchivo.add(crearItem("Guardar", atajo(KeyEvent.VK_S, false), () -> controlador.manejarGuardar()));
-        menuArchivo.add(crearItem("Guardar como...", atajo(KeyEvent.VK_S, true), () -> controlador.manejarGuardarComo()));
-        menuArchivo.add(crearItem("Guardar todo", null, () -> controlador.manejarGuardarTodo()));
+        menuArchivo.add(crearItem("Guardar", atajo(KeyEvent.VK_S, false), () -> controlador.manejarGuardar(), 'G'));
+        menuArchivo.add(crearItem("Guardar como...", atajo(KeyEvent.VK_S, true), () -> controlador.manejarGuardarComo(), 'O'));
+        menuArchivo.add(crearItem("Guardar todo", null, () -> controlador.manejarGuardarTodo(), 'T'));
         menuArchivo.addSeparator();
-        menuArchivo.add(crearItem("Cerrar pestaña", atajo(KeyEvent.VK_W, false), () -> controlador.manejarCerrarPestana()));
+        menuArchivo.add(crearItem("Cerrar pestaña", atajo(KeyEvent.VK_W, false), () -> controlador.manejarCerrarPestana(), 'S'));
         menuArchivo.addSeparator();
         JMenuItem itemInicio = estilizarItem(new JMenuItem("Inicio"));
+        itemInicio.setMnemonic('I');
         itemInicio.addActionListener(e -> {
             mostrarCarta(CARTA_TRANSICION);
             panelTransicion.iniciar(() -> mostrarCarta(CARTA_BIENVENIDA));
         });
         menuArchivo.add(itemInicio);
         JMenuItem itemSalir = estilizarItem(new JMenuItem("Salir"));
+        itemSalir.setMnemonic('L');
         itemSalir.addActionListener(e -> salir());
         menuArchivo.add(itemSalir);
 
         JMenu menuProyecto = estilizarMenu(new JMenu("Proyecto"));
-        menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar()));
-        menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar()));
+        menuProyecto.setMnemonic('P');
+        menuProyecto.add(crearItem("Compilar", KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0), () -> controlador.manejarCompilar(), 'C'));
+        menuProyecto.add(crearItem("Ejecutar", KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0), () -> controlador.manejarEjecutar(), 'E'));
         menuProyecto.addSeparator();
         JCheckBoxMenuItem itemVoz = new JCheckBoxMenuItem("Leer resultados en voz alta");
         estilizarItem(itemVoz);
+        itemVoz.setMnemonic('V');
         itemVoz.setSelected(LectorVoz.isHabilitado());
         itemVoz.setAccelerator(atajo(KeyEvent.VK_M, false));
         itemVoz.addActionListener(e -> controlador.manejarAlternarVoz(itemVoz.isSelected()));
         menuProyecto.add(itemVoz);
-        menuProyecto.add(crearItem("Detener voz", null, () -> controlador.manejarDetenerVoz()));
-        menuProyecto.add(crearItem("Repetir última lectura", atajo(KeyEvent.VK_R, false), () -> controlador.manejarRepetirVoz()));
-        menuProyecto.add(crearItem("Leer línea actual", atajo(KeyEvent.VK_L, false), () -> controlador.manejarLeerLinea()));
-        menuProyecto.add(crearItem("Leer archivo completo", atajo(KeyEvent.VK_L, true), () -> controlador.manejarLeerArchivo()));
+        menuProyecto.add(crearItem("Detener voz", null, () -> controlador.manejarDetenerVoz(), 'D'));
+        menuProyecto.add(crearItem("Repetir última lectura", atajo(KeyEvent.VK_R, false), () -> controlador.manejarRepetirVoz(), 'R'));
+        JMenuItem itemLeerLinea = crearItem("Leer línea actual", atajo(KeyEvent.VK_L, false), () -> controlador.manejarLeerLinea(), 'A');
+        itemLeerLinea.setDisplayedMnemonicIndex(11);
+        menuProyecto.add(itemLeerLinea);
+        menuProyecto.add(crearItem("Leer archivo completo", atajo(KeyEvent.VK_L, true), () -> controlador.manejarLeerArchivo(), 'P'));
         menuProyecto.addMenuListener(new MenuListener() {
             @Override
             public void menuSelected(MenuEvent e) {
@@ -377,16 +390,20 @@ public class MainView extends JFrame {
             }
         });
         menuProyecto.addSeparator();
-        menuProyecto.add(crearItem("Actualizar archivos", null, () -> controlador.manejarRefrescarProyecto()));
-        menuProyecto.add(crearItem("Cerrar proyecto", null, () -> controlador.manejarCerrarProyecto()));
+        menuProyecto.add(crearItem("Actualizar archivos", null, () -> controlador.manejarRefrescarProyecto(), 'Z'));
+        menuProyecto.add(crearItem("Cerrar proyecto", null, () -> controlador.manejarCerrarProyecto(), 'Y'));
 
         JMenu menuAyuda = estilizarMenu(new JMenu("Ayuda"));
+        menuAyuda.setMnemonic('Y');
         JMenuItem itemReferencia = estilizarItem(new JMenuItem("Referencia de Dobby"));
+        itemReferencia.setMnemonic('R');
         itemReferencia.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
         itemReferencia.addActionListener(e -> new AyudaDialog(this).setVisible(true));
         JMenuItem itemAcercaDe = estilizarItem(new JMenuItem("Acerca de Dobby"));
+        itemAcercaDe.setMnemonic('A');
         itemAcercaDe.addActionListener(e -> new AcercaDeDialog(this).setVisible(true));
         JMenuItem itemCreditos = estilizarItem(new JMenuItem("Créditos"));
+        itemCreditos.setMnemonic('C');
         itemCreditos.addActionListener(e -> new CreditosDialog(this).setVisible(true));
         menuAyuda.add(itemReferencia);
         menuAyuda.addSeparator();

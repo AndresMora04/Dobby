@@ -1,0 +1,24 @@
+Floo Alumno desde "alumnos.dobby";
+Floo promedio desde "operaciones.dobby";
+Floo aprobo desde "operaciones.dobby";
+Floo factorial desde "operaciones.dobby";
+
+Hogwarts() {
+    Gringotts<Alumno> alumnos = [
+        Alumno {nombre: "Harry", nota1: 80, nota2: 70, nota3: 90},
+        Alumno {nombre: "Hermione", nota1: 95, nota2: 98, nota3: 100},
+        Alumno {nombre: "Neville", nota1: 50, nota2: 60, nota3: 55}
+    ];
+
+    Wingardium (i = 0; i < alumnos.longitud; i = i + 1) {
+        Alohomora prom: Decimal;
+        prom = Accio promedio(alumnos[i]);
+        Protego (Accio aprobo(prom)) {
+            Revelio alumnos[i].nombre + " aprobo con promedio " + prom;
+        } Finite {
+            Revelio alumnos[i].nombre + " reprobo con promedio " + prom;
+        }
+    }
+
+    Revelio "5! = " + Accio factorial(5);
+}

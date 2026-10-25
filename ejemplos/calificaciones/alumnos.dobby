@@ -1,0 +1,6 @@
+Varita Alumno {
+    nombre: Texto;
+    nota1: Decimal;
+    nota2: Decimal;
+    nota3: Decimal;
+}

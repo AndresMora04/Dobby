@@ -351,6 +351,17 @@ salida con el prefijo `[ADVERTENCIA]`. Dobby detecta tres casos:
 - **Importación (`Floo`) nunca usada**: la función importada no se llama
   en el archivo que la importó.
 
+### Ubicación visual de errores
+
+Al compilar o ejecutar, si el error reportado corresponde a una línea del
+archivo abierto en la pestaña activa, el editor resalta esa línea con un
+fondo rojo y marca su número en el margen izquierdo. La marca desaparece
+automáticamente en cuanto se edita el archivo, se cambia de pestaña o se
+vuelve a compilar/ejecutar sin error. Si el error ocurre en un archivo
+distinto al que está abierto (por ejemplo uno importado con `Floo`), solo
+se indica por texto y voz, ya que el editor no puede resaltar un archivo
+que no tiene cargado.
+
 - Los símbolos desconocidos y operadores incompletos, como `&` o `|`, ya
   no se ignoran. Los operadores lógicos completos son `&&` y `||`.
 - Se admiten comentarios `// hasta fin de línea` y `/* de varias líneas */`.
@@ -441,6 +452,16 @@ función `Expecto`, importarla desde el principal y ejecutar mientras
 y comprobar que la ejecución se detiene con un error de proyecto.
 
 Pruebas automatizadas: `mvn test`.
+
+### Proyecto de ejemplo
+
+La carpeta [`ejemplos/calificaciones`](ejemplos/calificaciones) tiene un
+proyecto multi-archivo listo para abrir con **Archivo > Abrir carpeta...**
+y ejecutar con F5. `principal.dobby` importa un `Varita` (`alumnos.dobby`)
+y funciones (`operaciones.dobby`) con `Floo`, arma un `Gringotts<Alumno>`,
+recorre sus campos con `Wingardium`, decide con `Protego`/`Finite` llamando
+a una función directamente en la condición, y calcula un factorial con
+recursión.
 
 ## Menú de opciones (requisito del entorno gráfico)
 
@@ -604,8 +625,10 @@ macOS), sin librerías externas. Se puede desactivar desde Ajustes, y si el
 sistema no tiene un lector de voz disponible la app sigue funcionando
 normalmente, solo sin audio.
 
-Siguen pendientes la navegación completa por teclado (mnemonics) y los
-demás ajustes de la entrega final.
+La navegación por teclado incluye mnemonics: cada menú y cada opción se
+abre con Alt + letra subrayada (por ejemplo Alt+A abre Archivo, y con el
+menú abierto, P abre "Nuevo proyecto..."). No hay letras repetidas dentro
+de un mismo menú.
 
 El compilador y el intérprete incluyen validación léxica, comentarios y escapes,
 controles numéricos y de inicialización, límites de ejecución y pruebas de

@@ -437,6 +437,10 @@ public class AyudaDialog extends ModalDialog {
             """);
 
         temas.put("Atajos de teclado", """
+            Alt + letra subrayada   Abre un menu (Alt+A, Alt+P, Alt+Y) y,
+                                    con el menu abierto, activa una opcion
+                                    sin usar el mouse (ej. P para "Nuevo
+                                    proyecto..." dentro de Archivo)
             Ctrl + N            Nuevo archivo
             Ctrl + Shift + N    Nuevo proyecto
             Ctrl + O            Abrir archivo
