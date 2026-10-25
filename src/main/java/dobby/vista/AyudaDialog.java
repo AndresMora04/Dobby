@@ -517,6 +517,24 @@ public class AyudaDialog extends ModalDialog {
                 declara pero nunca se usa (linea 4)
             """);
 
+        temas.put("Ubicacion de errores", """
+            Al compilar o ejecutar, si el error ocurre en el archivo que
+            está abierto en la pestaña activa, el editor resalta esa línea
+            con un fondo rojo y marca su número en el margen izquierdo,
+            además de mostrar el mensaje en el panel de salida y, si la voz
+            está activada, leerlo en voz alta.
+
+            La marca desaparece sola en cuanto:
+            - Editas el archivo (cualquier cambio en el texto).
+            - Cambias a otra pestaña.
+            - Vuelves a compilar o ejecutar sin que ocurra ese error.
+
+            Si el error está en otro archivo (por ejemplo uno importado con
+            Floo que no tienes abierto), no se resalta ninguna línea porque
+            el editor no puede marcar un archivo que no tiene cargado; aun
+            así el mensaje indica el archivo y la línea por texto y voz.
+            """);
+
         temas.put("Errores comunes", """
             Los errores se muestran así:  [archivo.dobby] mensaje (linea N)
 

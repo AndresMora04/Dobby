@@ -49,6 +49,8 @@ public class EditorPanel extends JPanel {
     private static final Color BORDE_NUMEROS = new Color(48, 40, 68);
     private static final Color COLOR_NUMERO = new Color(112, 102, 132);
     private static final Color COLOR_LINEA_ACTUAL = new Color(255, 255, 255, 16);
+    private static final Color COLOR_LINEA_ERROR = new Color(200, 40, 40, 80);
+    private static final Color COLOR_NUMERO_ERROR = new Color(235, 90, 90);
     private static final Color TEXTO_NORMAL = new Color(224, 220, 210);
     private static final Color COLOR_TEXTO_LITERAL = new Color(150, 200, 140);
     private static final Color COLOR_NUMERO_LITERAL = new Color(190, 150, 220);
@@ -57,10 +59,13 @@ public class EditorPanel extends JPanel {
     private final PanelNumerosLinea panelNumeros;
     private final Lexer lexer = new Lexer();
     private final Highlighter.HighlightPainter pintorLineaActual = new ResaltadoLinea(COLOR_LINEA_ACTUAL);
+    private final Highlighter.HighlightPainter pintorLineaError = new ResaltadoLinea(COLOR_LINEA_ERROR);
     private boolean actualizandoEstilo;
     private boolean cargandoTexto;
     private Runnable alCambiarTexto;
     private Object marcaLineaActual;
+    private Object marcaError;
+    private int lineaConError = -1;
 
     private class PanelNumerosLinea extends JPanel {
         PanelNumerosLinea() {
@@ -97,7 +102,13 @@ public class EditorPanel extends JPanel {
                     }
                     String numero = String.valueOf(linea + 1);
                     int x = getWidth() - fm.stringWidth(numero) - 10;
-                    g2.setColor(linea == lineaActual ? TemaManager.getInstancia().getColorAcentoClaro() : COLOR_NUMERO);
+                    Color color = COLOR_NUMERO;
+                    if (linea == lineaConError) {
+                        color = COLOR_NUMERO_ERROR;
+                    } else if (linea == lineaActual) {
+                        color = TemaManager.getInstancia().getColorAcentoClaro();
+                    }
+                    g2.setColor(color);
                     g2.drawString(numero, x, r.y + fm.getAscent());
                 } catch (BadLocationException e) {
                 }
@@ -145,12 +156,14 @@ public class EditorPanel extends JPanel {
                 resaltar();
                 notificarCambio();
                 anunciarLineaPorEnter(e);
+                limpiarMarcaError();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
                 resaltar();
                 notificarCambio();
+                limpiarMarcaError();
             }
 
             @Override
@@ -324,6 +337,36 @@ public class EditorPanel extends JPanel {
     public int getLineaActual() {
         Element raiz = areaTexto.getDocument().getDefaultRootElement();
         return raiz.getElementIndex(areaTexto.getCaretPosition()) + 1;
+    }
+
+    public void marcarLineaError(int numeroLinea) {
+        limpiarMarcaError();
+        Element raiz = areaTexto.getDocument().getDefaultRootElement();
+        if (numeroLinea < 1 || numeroLinea > raiz.getElementCount()) {
+            return;
+        }
+        Element elementoLinea = raiz.getElement(numeroLinea - 1);
+        int inicio = elementoLinea.getStartOffset();
+        int fin = Math.max(inicio, elementoLinea.getEndOffset() - 1);
+        try {
+            marcaError = areaTexto.getHighlighter().addHighlight(inicio, fin, pintorLineaError);
+        } catch (BadLocationException e) {
+            return;
+        }
+        lineaConError = numeroLinea - 1;
+        areaTexto.setCaretPosition(inicio);
+        panelNumeros.repaint();
+    }
+
+    public void limpiarMarcaError() {
+        if (marcaError != null) {
+            areaTexto.getHighlighter().removeHighlight(marcaError);
+            marcaError = null;
+        }
+        if (lineaConError != -1) {
+            lineaConError = -1;
+            panelNumeros.repaint();
+        }
     }
 
     public void enfocar() {

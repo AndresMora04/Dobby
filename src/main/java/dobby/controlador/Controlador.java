@@ -246,6 +246,7 @@ public class Controlador {
     public void manejarCompilar() {
         if (ejecutando) return;
         vista.getPanelSalida().limpiar();
+        vista.getPanelEditor().limpiarMarcaError();
         try {
             Enlace enlace = enlazarPrograma();
             ResultadoEjecucion resultado = new ResultadoEjecucion();
@@ -280,6 +281,7 @@ public class Controlador {
     public void manejarEjecutar() {
         if (ejecutando) return;
         vista.getPanelSalida().limpiar();
+        vista.getPanelEditor().limpiarMarcaError();
         Enlace enlace;
         try {
             enlace = enlazarPrograma();
@@ -388,6 +390,14 @@ public class Controlador {
     private void leerErrorConLinea(String mensaje, String archivoError, int linea) {
         String textoLinea = textoLineaDelError(archivoError, linea);
         LectorVoz.leer(textoLinea != null ? mensaje + " " + textoLinea : mensaje);
+        marcarErrorEnEditor(archivoError, linea);
+    }
+
+    private void marcarErrorEnEditor(String archivoError, int linea) {
+        ArchivoDobby activo = flowController.getArchivoActivo();
+        if (linea > 0 && archivoError != null && activo != null && archivoError.equals(activo.getNombre())) {
+            vista.getPanelEditor().marcarLineaError(linea);
+        }
     }
 
     private String nombreArchivoEntrada() {
