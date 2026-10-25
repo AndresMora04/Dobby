@@ -267,6 +267,10 @@ public class Controlador {
                 vista.getPanelSalida().agregarMensaje(mensajeImportados);
                 resumenVoz.append(" ").append(mensajeImportados).append(".");
             }
+            for (String advertencia : enlace.advertencias()) {
+                vista.getPanelSalida().agregarAdvertencia(advertencia);
+                resumenVoz.append(" Advertencia: ").append(advertencia).append(".");
+            }
             LectorVoz.leer(resumenVoz.toString());
         } catch (RuntimeException e) {
             registrarError(e);

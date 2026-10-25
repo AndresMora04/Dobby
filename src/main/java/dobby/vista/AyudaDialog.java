@@ -494,6 +494,29 @@ public class AyudaDialog extends ModalDialog {
             Las salidas de más de 200 caracteres aparecen sin animación.
             """);
 
+        temas.put("Advertencias", """
+            Una advertencia no detiene la compilación ni la ejecución; solo
+            avisa de algo que probablemente no era la intención. Se muestran
+            en el panel de salida con el prefijo [ADVERTENCIA].
+
+            Dobby detecta tres casos:
+
+            - Variable declarada y nunca usada: se declaró con Alohomora o
+              Gringotts<Tipo> pero su valor nunca se lee en ninguna
+              expresión. Asignarle un valor no cuenta como uso. La variable
+              de un Wingardium no se marca, porque su propia condición
+              (i < 10) ya la lee.
+            - Función declarada y nunca llamada: ninguna función del
+              proyecto la invoca con Accio, ni en este archivo ni en los
+              que la importan con Floo. Hogwarts() nunca se marca así.
+            - Importación (Floo) nunca usada: se importó una función pero
+              el archivo que la importó nunca la llama.
+
+            Ejemplo:
+                [ADVERTENCIA] [principal.dobby] La variable 'total' se
+                declara pero nunca se usa (linea 4)
+            """);
+
         temas.put("Errores comunes", """
             Los errores se muestran así:  [archivo.dobby] mensaje (linea N)
 

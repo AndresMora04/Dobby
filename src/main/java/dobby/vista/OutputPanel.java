@@ -85,6 +85,10 @@ public class OutputPanel extends JPanel {
         }
     }
 
+    public void agregarAdvertencia(String advertencia) {
+        agregarMensaje("[ADVERTENCIA] " + advertencia);
+    }
+
     public void agregarError(String mensajeError) {
         mostrarPendientes();
         agregarLinea("[ERROR] " + mensajeError);

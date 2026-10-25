@@ -40,6 +40,13 @@ public class ValidadorSemantico {
     private Map<String, NodoEstructura> estructuras = Map.of();
     private String archivo;
     private final Set<String> declaracionesPosibles = new HashSet<>();
+    private final Set<String> variablesLeidas = new HashSet<>();
+    private final Map<String, Integer> lineasDeclaracion = new HashMap<>();
+    private final List<String> advertencias = new ArrayList<>();
+
+    public List<String> getAdvertencias() {
+        return advertencias;
+    }
 
     public void validar(NodoFuncion funcion) {
         this.funcion = funcion;
@@ -47,6 +54,9 @@ public class ValidadorSemantico {
         this.estructuras = funcion.getEstructuras();
         this.archivo = funcion.getArchivo();
         declaracionesPosibles.clear();
+        variablesLeidas.clear();
+        lineasDeclaracion.clear();
+        advertencias.clear();
         declaracionesPosibles.addAll(funcion.getParametros().keySet());
         if (funcion.isEsPrincipal() && !funcion.getParametros().isEmpty()) {
             throw error("Hogwarts() no puede recibir parametros", funcion.getLinea());
@@ -64,6 +74,12 @@ public class ValidadorSemantico {
             throw error("La funcion '" + funcion.getNombre()
                 + "' debe retornar " + funcion.getTipoRetorno() + " con Patronum en todos sus caminos",
                 funcion.getLinea());
+        }
+        for (String nombre : declaracionesPosibles) {
+            if (!funcion.getParametros().containsKey(nombre) && !variablesLeidas.contains(nombre)) {
+                int linea = lineasDeclaracion.getOrDefault(nombre, funcion.getLinea());
+                advertencias.add("La variable '" + nombre + "' se declara pero nunca se usa (linea " + linea + ")");
+            }
         }
     }
 
@@ -98,6 +114,7 @@ public class ValidadorSemantico {
                 }
                 variables.put(n.getNombre(), n.getTipo());
                 declaracionesPosibles.add(n.getNombre());
+                lineasDeclaracion.put(n.getNombre(), n.getLinea());
             }
             case NodoAsignacion n -> validarValor(tipoVariable(n.getNombreVariable(), variables, n.getLinea()),
                 n.getExpresion(), variables);
@@ -150,6 +167,7 @@ public class ValidadorSemantico {
                     String tipo = tipoDe(inicio.getExpresion(), variables);
                     variables.put(inicio.getNombreVariable(), esTexto(tipo) ? "Texto" : tipo);
                     declaracionesPosibles.add(inicio.getNombreVariable());
+                    lineasDeclaracion.put(inicio.getNombreVariable(), inicio.getLinea());
                 } else {
                     validarSentencia(n.getInicializacion(), variables, ciclos);
                 }
@@ -186,7 +204,10 @@ public class ValidadorSemantico {
                 if (valor instanceof Boolean) yield "Booleano";
                 yield ((String) valor).length() == 1 ? "Caracter" : "Texto";
             }
-            case NodoVariable n -> tipoVariable(n.getNombre(), variables, n.getLinea());
+            case NodoVariable n -> {
+                variablesLeidas.add(n.getNombre());
+                yield tipoVariable(n.getNombre(), variables, n.getLinea());
+            }
             case NodoArreglo n -> inferirArreglo(n, variables);
             case NodoCreacionEstructura n -> validarCreacion(n, variables);
             case NodoAccesoCampo n -> tipoCampo(n, variables);

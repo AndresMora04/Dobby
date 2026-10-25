@@ -335,6 +335,22 @@ importación. La salida indica archivo, línea, descripción y posible causa.
 Un error detiene esa ejecución, conserva lo impreso antes del fallo y permite
 corregir el programa y volver a ejecutarlo.
 
+### Advertencias
+
+A diferencia de un error, una advertencia no detiene la compilación: el
+programa compila y puede ejecutarse igual. Se muestran en el panel de
+salida con el prefijo `[ADVERTENCIA]`. Dobby detecta tres casos:
+
+- **Variable declarada y nunca usada**: `Alohomora`/`Gringotts<T>` cuyo
+  valor nunca se lee en ninguna expresión. Asignarle un valor no cuenta
+  como uso; la variable de un `Wingardium` sí cuenta porque su propia
+  condición la lee.
+- **Función declarada y nunca llamada**: ninguna función del proyecto
+  (en este archivo o en los que importa) la invoca con `Accio`.
+  `Hogwarts()` nunca se marca así, es el punto de entrada.
+- **Importación (`Floo`) nunca usada**: la función importada no se llama
+  en el archivo que la importó.
+
 - Los símbolos desconocidos y operadores incompletos, como `&` o `|`, ya
   no se ignoran. Los operadores lógicos completos son `&&` y `||`.
 - Se admiten comentarios `// hasta fin de línea` y `/* de varias líneas */`.

@@ -4,10 +4,27 @@ import dobby.motor.lexer.Lexer;
 import dobby.motor.lexer.ErrorLexico;
 import dobby.motor.lexer.Token;
 import dobby.motor.parser.Nodo;
+import dobby.motor.parser.NodoAccesoArreglo;
+import dobby.motor.parser.NodoAccesoCampo;
+import dobby.motor.parser.NodoArreglo;
+import dobby.motor.parser.NodoAsignacion;
+import dobby.motor.parser.NodoAsignacionArreglo;
+import dobby.motor.parser.NodoAsignacionCampo;
+import dobby.motor.parser.NodoCreacionEstructura;
+import dobby.motor.parser.NodoDeclaracionVariable;
 import dobby.motor.parser.NodoFuncion;
 import dobby.motor.parser.NodoEstructura;
 import dobby.motor.parser.NodoImportacion;
+import dobby.motor.parser.NodoImpresion;
+import dobby.motor.parser.NodoLlamada;
+import dobby.motor.parser.NodoLongitud;
+import dobby.motor.parser.NodoMientras;
+import dobby.motor.parser.NodoOperacionBinaria;
+import dobby.motor.parser.NodoOperacionUnaria;
+import dobby.motor.parser.NodoPara;
 import dobby.motor.parser.NodoPrograma;
+import dobby.motor.parser.NodoRetorno;
+import dobby.motor.parser.NodoSi;
 import dobby.motor.parser.Parser;
 
 import java.io.IOException;
@@ -33,6 +50,7 @@ public class Enlazador {
     private final ProveedorCodigo proveedor;
     private final Map<Path, Modulo> cache = new HashMap<>();
     private final List<Path> pila = new ArrayList<>();
+    private final List<String> advertencias = new ArrayList<>();
     private int tokensEntrada;
 
     public Enlazador(ProveedorCodigo proveedor) {
@@ -42,17 +60,19 @@ public class Enlazador {
     public Enlace enlazar(Path rutaEntrada, String codigo, Path carpetaBase) {
         cache.clear();
         pila.clear();
+        advertencias.clear();
         Path clave = rutaEntrada != null ? normalizar(rutaEntrada) : null;
         Path carpeta = clave != null ? clave.getParent() : carpetaBase;
         String etiqueta = clave != null ? clave.getFileName().toString() : null;
         NodoPrograma programa = parsear(codigo, etiqueta, true);
-        construirModulo(programa, clave, etiqueta, carpeta);
+        Modulo moduloEntrada = construirModulo(programa, clave, etiqueta, carpeta);
         boolean hayPrincipal = programa.getSentencias().stream()
             .anyMatch(n -> n instanceof NodoFuncion f && f.isEsPrincipal());
         if (!hayPrincipal) {
             throw new ErrorEnlace(prefijo(etiqueta) + "No se encontro la funcion principal Hogwarts()");
         }
-        return new Enlace(programa, cache.size(), tokensEntrada);
+        detectarFuncionesNoUsadas(moduloEntrada);
+        return new Enlace(programa, cache.size(), tokensEntrada, new ArrayList<>(advertencias));
     }
 
     private NodoPrograma parsear(String codigo, String etiqueta, boolean esEntrada) {
@@ -138,9 +158,116 @@ public class Enlazador {
             funcion.setEstructuras(estructuras);
         }
         for (NodoFuncion funcion : propias.values()) {
-            new ValidadorSemantico().validar(funcion);
+            ValidadorSemantico validador = new ValidadorSemantico();
+            validador.validar(funcion);
+            for (String advertencia : validador.getAdvertencias()) {
+                advertencias.add(prefijo(etiqueta) + advertencia);
+            }
         }
+
+        Set<String> llamadasPropias = new HashSet<>();
+        for (NodoFuncion funcion : propias.values()) {
+            recolectarLista(funcion.getCuerpo(), llamadasPropias);
+        }
+        for (NodoImportacion importacion : importaciones) {
+            if (!llamadasPropias.contains(importacion.getNombreFuncion())
+                && !estructuras.containsKey(importacion.getNombreFuncion())) {
+                advertencias.add(prefijo(etiqueta) + "La funcion importada '" + importacion.getNombreFuncion()
+                    + "' nunca se usa en este archivo (linea " + importacion.getLinea() + ")");
+            }
+        }
+
         return new Modulo(propias, estructurasPropias, estructuras);
+    }
+
+    private void detectarFuncionesNoUsadas(Modulo moduloEntrada) {
+        List<Modulo> modulos = new ArrayList<>(cache.values());
+        modulos.add(moduloEntrada);
+        Set<String> llamadas = new HashSet<>();
+        for (Modulo modulo : modulos) {
+            for (NodoFuncion funcion : modulo.propias().values()) {
+                recolectarLista(funcion.getCuerpo(), llamadas);
+            }
+        }
+        for (Modulo modulo : modulos) {
+            for (NodoFuncion funcion : modulo.propias().values()) {
+                if (!funcion.isEsPrincipal() && !llamadas.contains(funcion.getNombre())) {
+                    advertencias.add(prefijo(funcion.getArchivo()) + "La funcion '" + funcion.getNombre()
+                        + "' se declara pero nunca se llama (linea " + funcion.getLinea() + ")");
+                }
+            }
+        }
+    }
+
+    private void recolectarLista(List<Nodo> sentencias, Set<String> nombres) {
+        if (sentencias != null) {
+            for (Nodo sentencia : sentencias) {
+                recolectarLlamadas(sentencia, nombres);
+            }
+        }
+    }
+
+    private void recolectarLlamadas(Nodo nodo, Set<String> nombres) {
+        switch (nodo) {
+            case null -> {
+            }
+            case NodoDeclaracionVariable n -> recolectarLlamadas(n.getValorInicial(), nombres);
+            case NodoAsignacion n -> recolectarLlamadas(n.getExpresion(), nombres);
+            case NodoAsignacionArreglo n -> {
+                recolectarLlamadas(n.getDestino(), nombres);
+                recolectarLlamadas(n.getExpresion(), nombres);
+            }
+            case NodoAsignacionCampo n -> {
+                recolectarLlamadas(n.getDestino(), nombres);
+                recolectarLlamadas(n.getExpresion(), nombres);
+            }
+            case NodoImpresion n -> recolectarLlamadas(n.getExpresion(), nombres);
+            case NodoRetorno n -> recolectarLlamadas(n.getExpresion(), nombres);
+            case NodoSi n -> {
+                recolectarLlamadas(n.getCondicion(), nombres);
+                recolectarLista(n.getSentenciasSiVerdadero(), nombres);
+                recolectarLista(n.getSentenciasSiFalso(), nombres);
+            }
+            case NodoMientras n -> {
+                recolectarLlamadas(n.getCondicion(), nombres);
+                recolectarLista(n.getCuerpo(), nombres);
+            }
+            case NodoPara n -> {
+                recolectarLlamadas(n.getInicializacion(), nombres);
+                recolectarLlamadas(n.getCondicion(), nombres);
+                recolectarLlamadas(n.getIncremento(), nombres);
+                recolectarLista(n.getCuerpo(), nombres);
+            }
+            case NodoLlamada n -> {
+                nombres.add(n.getNombreFuncion());
+                for (Nodo argumento : n.getArgumentos()) {
+                    recolectarLlamadas(argumento, nombres);
+                }
+            }
+            case NodoOperacionBinaria n -> {
+                recolectarLlamadas(n.getIzquierda(), nombres);
+                recolectarLlamadas(n.getDerecha(), nombres);
+            }
+            case NodoOperacionUnaria n -> recolectarLlamadas(n.getOperando(), nombres);
+            case NodoAccesoArreglo n -> {
+                recolectarLlamadas(n.getArreglo(), nombres);
+                recolectarLlamadas(n.getIndice(), nombres);
+            }
+            case NodoAccesoCampo n -> recolectarLlamadas(n.getEstructura(), nombres);
+            case NodoLongitud n -> recolectarLlamadas(n.getArreglo(), nombres);
+            case NodoArreglo n -> {
+                for (Nodo elemento : n.getElementos()) {
+                    recolectarLlamadas(elemento, nombres);
+                }
+            }
+            case NodoCreacionEstructura n -> {
+                for (Nodo valor : n.getCampos().values()) {
+                    recolectarLlamadas(valor, nombres);
+                }
+            }
+            default -> {
+            }
+        }
     }
 
     private Modulo resolverImportacion(NodoImportacion importacion, String etiqueta, Path carpeta) {
