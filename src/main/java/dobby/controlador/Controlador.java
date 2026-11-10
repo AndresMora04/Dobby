@@ -393,6 +393,14 @@ public class Controlador {
         marcarErrorEnEditor(archivoError, linea);
     }
 
+    private String calcularNombreArchivo(Path ruta) {
+        Proyecto proyecto = flowController.getProyectoActivo();
+        if (proyecto != null && ruta.startsWith(proyecto.getCarpeta())) {
+            return proyecto.getCarpeta().relativize(ruta).toString();
+        }
+        return ruta.getFileName().toString();
+    }
+
     private void marcarErrorEnEditor(String archivoError, int linea) {
         ArchivoDobby activo = flowController.getArchivoActivo();
         if (linea > 0 && archivoError != null && activo != null && archivoError.equals(activo.getNombre())) {
@@ -502,7 +510,7 @@ public class Controlador {
 
         ArchivoDobby descartable = sinTituloVacioUnico();
         ArchivoDobby archivo = new ArchivoDobby(ruta);
-        archivo.setNombre(ruta.getFileName().toString());
+        archivo.setNombre(calcularNombreArchivo(ruta));
         archivo.setContenido(contenido);
         archivo.setModificado(false);
         archivosAbiertos().add(archivo);
@@ -577,7 +585,7 @@ public class Controlador {
         ArchivoDobby abierto = flowController.buscarAbierto(ruta);
         if (abierto != null) {
             abierto.setRuta(destino);
-            abierto.setNombre(nombre);
+            abierto.setNombre(calcularNombreArchivo(destino));
         }
         refrescarProyectoActual();
         vista.getPanelSalida().limpiar();
@@ -695,7 +703,7 @@ public class Controlador {
             quitarAbierto(otro);
         }
         archivo.setRuta(destino);
-        archivo.setNombre(destino.getFileName().toString());
+        archivo.setNombre(calcularNombreArchivo(destino));
         archivo.setModificado(false);
         asegurarProyecto(destino);
         refrescarVista();

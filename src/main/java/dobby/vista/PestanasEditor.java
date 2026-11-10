@@ -5,6 +5,9 @@ import dobby.util.TemaManager;
 
 import javax.swing.JPanel;
 
+import javax.swing.AbstractAction;
+import javax.swing.KeyStroke;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -15,6 +18,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
@@ -78,10 +85,47 @@ public class PestanasEditor extends JPanel {
                 } else if (e.getButton() == MouseEvent.BUTTON1 && alSeleccionar != null) {
                     alSeleccionar.accept(archivo);
                 }
+                requestFocusInWindow();
+            }
+        });
+
+        setFocusable(true);
+        addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                repaint();
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                repaint();
+            }
+        });
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0), "pestanaAnterior");
+        getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0), "pestanaSiguiente");
+        getActionMap().put("pestanaAnterior", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moverSeleccion(-1);
+            }
+        });
+        getActionMap().put("pestanaSiguiente", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                moverSeleccion(1);
             }
         });
 
         TemaManager.getInstancia().agregarOyente(this::repaint);
+    }
+
+    private void moverSeleccion(int delta) {
+        if (archivos.isEmpty() || alSeleccionar == null) {
+            return;
+        }
+        int indice = archivos.indexOf(activo);
+        indice = indice < 0 ? 0 : Math.floorMod(indice + delta, archivos.size());
+        alSeleccionar.accept(archivos.get(indice));
     }
 
     public void alSeleccionar(Consumer<ArchivoDobby> alSeleccionar) {
@@ -169,6 +213,11 @@ public class PestanasEditor extends JPanel {
             if (seleccionada) {
                 g2.setColor(acento);
                 g2.fillRect(x, 0, anchoPestana, 3);
+            }
+            if (seleccionada && isFocusOwner()) {
+                g2.setColor(TEXTO_ACTIVO);
+                g2.setStroke(new BasicStroke(1.4f));
+                g2.drawRect(x + 2, 4, anchoPestana - 5, ALTO - 7);
             }
             g2.setColor(SEPARADOR);
             g2.drawLine(x + anchoPestana - 1, 0, x + anchoPestana - 1, ALTO - 1);

@@ -21,6 +21,9 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
+import javax.swing.AbstractAction;
+import javax.swing.KeyStroke;
+
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -28,6 +31,10 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FlowLayout;
+import java.awt.Rectangle;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.nio.file.Path;
@@ -124,6 +131,23 @@ public class FileTreePanel extends JPanel {
                     && nodo.getUserObject() instanceof EntradaArchivo entrada) {
                     alAbrirArchivo.accept(entrada.ruta());
                 }
+            }
+        });
+
+        arbol.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "abrirSeleccionado");
+        arbol.getActionMap().put("abrirSeleccionado", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                abrirSeleccionado();
+            }
+        });
+        arbol.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_CONTEXT_MENU, 0), "menuSeleccionado");
+        arbol.getInputMap(WHEN_FOCUSED).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_F10, InputEvent.SHIFT_DOWN_MASK), "menuSeleccionado");
+        arbol.getActionMap().put("menuSeleccionado", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                mostrarMenuSeleccionado();
             }
         });
 
@@ -238,8 +262,31 @@ public class FileTreePanel extends JPanel {
         this.alEliminar = alEliminar;
     }
 
+    private void abrirSeleccionado() {
+        TreePath camino = arbol.getSelectionPath();
+        if (alAbrirArchivo != null && camino != null
+            && camino.getLastPathComponent() instanceof DefaultMutableTreeNode nodo
+            && nodo.getUserObject() instanceof EntradaArchivo entrada) {
+            alAbrirArchivo.accept(entrada.ruta());
+        }
+    }
+
+    private void mostrarMenuSeleccionado() {
+        TreePath camino = arbol.getSelectionPath();
+        if (camino == null) {
+            return;
+        }
+        Rectangle limites = arbol.getPathBounds(camino);
+        int x = limites != null ? limites.x : 0;
+        int y = limites != null ? limites.y + limites.height : 0;
+        mostrarMenuPara(camino, x, y);
+    }
+
     private void mostrarMenu(MouseEvent e) {
-        TreePath camino = arbol.getPathForLocation(e.getX(), e.getY());
+        mostrarMenuPara(arbol.getPathForLocation(e.getX(), e.getY()), e.getX(), e.getY());
+    }
+
+    private void mostrarMenuPara(TreePath camino, int x, int y) {
         if (camino == null || carpetaProyecto == null
             || !(camino.getLastPathComponent() instanceof DefaultMutableTreeNode nodo)) {
             return;
@@ -274,7 +321,7 @@ public class FileTreePanel extends JPanel {
             public void popupMenuCanceled(PopupMenuEvent evento) {
             }
         });
-        menu.show(arbol, e.getX(), e.getY());
+        menu.show(arbol, x, y);
     }
 
     private JMenuItem crearItem(String texto, Runnable accion) {

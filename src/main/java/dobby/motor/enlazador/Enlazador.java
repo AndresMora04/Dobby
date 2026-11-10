@@ -52,6 +52,7 @@ public class Enlazador {
     private final List<Path> pila = new ArrayList<>();
     private final List<String> advertencias = new ArrayList<>();
     private int tokensEntrada;
+    private Path raiz;
 
     public Enlazador(ProveedorCodigo proveedor) {
         this.proveedor = proveedor;
@@ -61,9 +62,10 @@ public class Enlazador {
         cache.clear();
         pila.clear();
         advertencias.clear();
+        raiz = carpetaBase;
         Path clave = rutaEntrada != null ? normalizar(rutaEntrada) : null;
         Path carpeta = clave != null ? clave.getParent() : carpetaBase;
-        String etiqueta = clave != null ? clave.getFileName().toString() : null;
+        String etiqueta = clave != null ? etiquetaPara(clave) : null;
         NodoPrograma programa = parsear(codigo, etiqueta, true);
         Modulo moduloEntrada = construirModulo(programa, clave, etiqueta, carpeta);
         boolean hayPrincipal = programa.getSentencias().stream()
@@ -130,7 +132,6 @@ public class Enlazador {
                 if (importada != null) {
                     ambito.put(nombre, importada);
                 }
-                // Las funciones importadas conservan los tipos de su modulo y sus dependencias.
                 for (NodoEstructura estructura : modulo.estructuras().values()) {
                     NodoEstructura anterior = estructuras.putIfAbsent(estructura.getNombre(), estructura);
                     if (anterior != null && anterior != estructura) {
@@ -286,7 +287,7 @@ public class Enlazador {
         if (importacion.getArchivo().isBlank() || ruta.getFileName() == null) {
             throw error(etiqueta, "La ruta de Floo debe indicar un archivo", importacion.getLinea());
         }
-        String nombreArchivo = ruta.getFileName().toString();
+        String nombreArchivo = etiquetaPara(ruta);
 
         if (pila.contains(ruta)) {
             throw error(etiqueta, "Importacion circular: " + cadenaCircular(ruta), importacion.getLinea());
@@ -326,14 +327,25 @@ public class Enlazador {
                 dentro = true;
             }
             if (dentro) {
-                cadena.append(ruta.getFileName()).append(" -> ");
+                cadena.append(etiquetaPara(ruta)).append(" -> ");
             }
         }
-        return cadena.append(destino.getFileName()).toString();
+        return cadena.append(etiquetaPara(destino)).toString();
     }
 
     private Path normalizar(Path ruta) {
         return ruta.toAbsolutePath().normalize();
+    }
+
+    private String etiquetaPara(Path ruta) {
+        if (raiz == null) {
+            return ruta.getFileName().toString();
+        }
+        try {
+            return raiz.relativize(ruta).toString();
+        } catch (IllegalArgumentException e) {
+            return ruta.getFileName().toString();
+        }
     }
 
     private String prefijo(String etiqueta) {

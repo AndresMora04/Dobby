@@ -85,6 +85,7 @@ public final class LectorVoz {
                 return;
             } catch (IOException e) {
                 procesoActual = null;
+                disponibleCache = null;
             }
         }
     }
@@ -113,11 +114,17 @@ public final class LectorVoz {
 
     private static boolean calcularDisponibilidad() {
         String os = System.getProperty("os.name", "").toLowerCase();
-        if (os.contains("win")) {
-            return true;
-        }
-        String comando = os.contains("mac") ? "say" : "espeak";
         try {
+            if (os.contains("win")) {
+                String script = "try { Add-Type -AssemblyName System.Speech; "
+                    + "New-Object System.Speech.Synthesis.SpeechSynthesizer | Out-Null; exit 0 } "
+                    + "catch { exit 1 }";
+                Process proceso = new ProcessBuilder("powershell", "-NoProfile", "-NonInteractive",
+                    "-WindowStyle", "Hidden", "-Command", script).redirectErrorStream(true).start();
+                boolean termino = proceso.waitFor(4, TimeUnit.SECONDS);
+                return termino && proceso.exitValue() == 0;
+            }
+            String comando = os.contains("mac") ? "say" : "espeak";
             Process proceso = new ProcessBuilder("which", comando).redirectErrorStream(true).start();
             boolean termino = proceso.waitFor(2, TimeUnit.SECONDS);
             return termino && proceso.exitValue() == 0;

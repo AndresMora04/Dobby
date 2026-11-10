@@ -61,7 +61,7 @@ public class GestorProyecto {
         List<ArchivoDobby> archivos = new ArrayList<>();
         for (Path ruta : FileUtil.listarArchivosDobbyRecursivo(proyecto.getCarpeta(), Integer.MAX_VALUE)) {
             ArchivoDobby archivo = new ArchivoDobby(ruta);
-            archivo.setNombre(ruta.getFileName().toString());
+            archivo.setNombre(proyecto.getCarpeta().relativize(ruta).toString());
             archivos.add(archivo);
         }
         proyecto.setArchivos(archivos);

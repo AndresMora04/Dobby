@@ -1,125 +1,53 @@
 # Dobby
 
-Lenguaje de programación educativo con temática de Harry Potter, desarrollado
-como proyecto para el curso de Paradigmas de Programación (UNA, Sede Regional
-Brunca - Campus Pérez Zeledón, prof. Pablo A. Venegas Elizondo). Incluye un
-lenguaje propio, un compilador/intérprete y un entorno gráfico de escritura
-de código (mini-IDE) construido en Java con Swing.
+**Un lenguaje de programación con temática de Harry Potter, pensado para que aprender a programar se sienta menos como memorizar palabras clave en inglés y más como aprender hechizos.**
 
-## Integrantes
+Dobby tiene tres piezas: un lenguaje de programación propio, un motor que lo compila y lo ejecuta de verdad (no es una simulación), y un pequeño entorno de desarrollo gráfico, construido todo en Java con Swing. Es un proyecto del curso Paradigmas de Programación, Universidad Nacional, Sede Regional Brunca, Campus Pérez Zeledón, a cargo del profesor Pablo A. Venegas Elizondo.
 
-- José Andrés Mora Mora
-- Darien Arroyo Castro
+**Integrantes:** José Andrés Mora Mora y Darien Arroyo Castro.
 
-## Documentación
+---
 
-La documentación formal del proyecto (planteamiento del problema, propuesta
-de solución, pruebas, etc., según el enunciado del curso) se lleva en Google
-Drive:
-[Documento de Dobby](https://docs.google.com/document/d/19L3MUmLLpp1Ip35WHBakqJbFW2lt02fOkEJsLRYRW6Y/edit?usp=sharing)
+## Cómo nació la idea
 
-Este README es la referencia técnica de trabajo del equipo (diseño del
-lenguaje + estructura del proyecto de software + diseño visual/UX); no
-sustituye la documentación formal en PDF que exige el curso.
+Aprender a programar en los primeros cursos es complicado, y no es solo por la lógica detrás de cada problema: también porque la sintaxis misma no tiene nada que atrape, nada que se quede en la cabeza.
 
-## Problema y motivación
+Harry Potter no se eligió al azar. Es, probablemente, el universo de fantasía más reconocido del mundo, cruza generaciones y formatos (libros, películas, fandom), y ya trae consigo un vocabulario mágico memorable por diseño: `Accio`, `Alohomora`, `Expelliarmus` ya suenan a instrucciones antes de que nadie las explique. El universo también se presta solo: un hechizo es, literalmente, una instrucción; una función que retorna algo bien podría invocar su propio patronus. Así nació `Wingardium` en vez de `for`, `Imperio` en vez de `while`.
 
-- La sintaxis técnica en inglés de los lenguajes de programación
-  tradicionales es una barrera de entrada real para quienes empiezan a
-  programar (estudiantes de secundaria, autodidactas). Dobby usa una
-  temática familiar (Harry Potter) para bajar esa barrera cognitiva y
-  emocional.
-- Un editor de código es una herramienta 100% visual por naturaleza, lo que
-  excluye a personas con discapacidad visual. Esta es la segunda motivación
-  del proyecto y da pie a la innovación (ver abajo).
+La segunda pregunta llegó después, pensando en quién se queda afuera de un editor de código tradicional: alguien con discapacidad visual. Un editor es, por diseño, una herramienta 100% visual. Ningún curso introductorio pensado solo para verse en pantalla incluye a esa persona. Esa fue la motivación real detrás de la innovación del proyecto: si ya se estaba construyendo un lenguaje pensado para bajar una barrera de entrada, tenía sentido que también bajara esa otra.
 
-## Innovación
+Así es como Dobby terminó siendo dos cosas a la vez: un lenguaje con identidad propia, memorable porque no se parece a los demás, y un entorno que se puede usar completo por voz y por teclado, sin depender de ver la pantalla.
 
-Característica adicional exigida por el enunciado (no puede ser solo
-estética): **accesibilidad para personas con discapacidad visual**.
+---
 
-- **Texto-a-voz (TTS)**: al compilar o ejecutar, además de mostrarse en el
-  panel de salida, el resultado (éxito, error de sintaxis/semántico/de
-  ejecución, incluida la línea exacta del error) se lee en voz alta
-  invocando el motor de voz del sistema operativo (`System.Speech` vía
-  PowerShell en Windows con selección automática de voz en español,
-  `espeak` en Linux, `say` en macOS), sin agregar dependencias externas al
-  proyecto (JDK estándar + `ProcessBuilder`). Apagado por defecto,
-  activable con Ctrl+M.
-- **Leer código en voz alta**: además del resultado, se puede pedir que
-  lea la línea actual (Ctrl+L) o el archivo completo (Ctrl+Shift+L). El
-  código no se lee tal cual — se tokeniza con el mismo `Lexer` del
-  lenguaje y cada símbolo (`{`, `}`, `;`, `==`, `&&`, etc.) se traduce a su
-  nombre en español, para que la estructura del programa se entienda
-  hablada y no solo como una lista de palabras sueltas. Esa misma
-  traducción se aplica también a los mensajes de error, así que un
-  `'{'` dentro de la descripción del error también se escucha.
-- **Orientación y control de la lectura**: un click en el editor o
-  presionar Enter anuncia en qué línea quedó el cursor, sin necesidad de
-  ver la pantalla. Las lecturas nunca se acumulan — cada mensaje nuevo
-  corta al instante al anterior — y se puede repetir la última lectura
-  (Ctrl+R) o detenerla (menú Proyecto) en cualquier momento.
-- **Diálogos accesibles**: los cuadros de "cambios sin guardar",
-  "sobrescribir archivo", "nuevo archivo", "renombrar", "eliminar" y el
-  de `Legilimens` (entrada de datos) anuncian su título, su pregunta y
-  sus opciones apenas se abren, y se cierran con Escape sin usar el mouse.
-- **Navegación completa por teclado**: Compilar, Ejecutar, Nuevo, Abrir,
-  Guardar y cambio de archivo activo deben poder invocarse sin usar el mouse
-  (mnemonics/atajos).
-- **Plus opcional** (solo si sobra tiempo): compatibilidad con lectores de
-  pantalla externos vía `javax.accessibility` (Java Access Bridge).
-- Advertencia técnica para la defensa: `espeak` no siempre viene instalado
-  por defecto en Linux, y el primer llamado a `System.Speech` en Windows
-  puede tardar un poco en cargar. Probar en la máquina de la presentación
-  antes del día, y que la app siga funcionando (sin audio) si el motor de
-  voz no está disponible.
+## ¿Qué es Dobby, exactamente?
 
-## Requisitos
+- Un **lenguaje de programación real**: tiene su propia sintaxis, su propia semántica, tipos simples y compuestos, funciones, condicionales, ciclos, y un sistema de proyectos con varios archivos que se importan entre sí.
+- Un **motor de lenguaje** construido como lo haría un compilador de verdad: un *Lexer* que tokeniza el código, un *Parser* que arma el árbol de sintaxis por descenso recursivo, un *Enlazador* que resuelve las importaciones entre archivos y valida la semántica, y un *Intérprete* que recorre ese árbol y lo ejecuta.
+- Un **mini-IDE en Swing**: editor con pestañas y resaltado de errores, árbol de archivos, panel de salida, y un sistema de ayuda integrado para consultar el lenguaje sin salir de la aplicación.
+- Pensado para **estudiantes principiantes** (secundaria, un curso CS1, o autodidactas) y, de forma transversal, para **personas con discapacidad visual**, gracias a la accesibilidad por voz y teclado.
 
-- JDK 21 o superior
-- Apache Maven 3.9 o superior
+No está pensado para reemplazar un lenguaje de propósito general. Su objetivo es educativo: que alguien entienda cómo funciona un lenguaje de programación por dentro, construyendo uno desde cero.
 
-## Cómo compilar y ejecutar
+---
 
-Compilar el proyecto:
+## El lenguaje
 
-```
-mvn compile
-```
+### Identidad
 
-Ejecutar la aplicación (abre la ventana principal del IDE):
+- **Nombre:** Dobby
+- **Extensión de archivo:** `.dobby`
+- **Filosofía de diseño:** cada palabra reservada es un hechizo o un lugar reconocible del universo de Harry Potter, elegido para que su significado como instrucción sea fácil de recordar y no una palabra arbitraria más que memorizar.
 
-```
-mvn compile exec:java
-```
+### Palabras reservadas
 
-Generar el `.jar` ejecutable:
-
-```
-mvn package
-```
-
-## Identidad del lenguaje
-
-- **Nombre**: Dobby
-- **Extensión de archivo**: `.dobby`
-- **Propósito**: enseñar los fundamentos de la programación de forma
-  memorable y accesible.
-- **Usuarios**: estudiantes principiantes y personas con discapacidad
-  visual.
-- **Filosofía de diseño**: cada palabra reservada es un hechizo o lugar
-  reconocible del universo de Harry Potter, elegido para que su significado
-  como instrucción de programación sea intuitivo de recordar.
-
-## Palabras reservadas
-
-| Palabra reservada | Propósito | Forma de uso | Ejemplo |
+| Palabra | Propósito | Forma de uso | Ejemplo |
 |---|---|---|---|
 | `Alohomora` | Declarar variable | `Alohomora nombre: Tipo;` | `Alohomora edad: Entero;` |
 | `Expecto` | Declarar función | `Expecto nombre(params): Tipo { ... }` | `Expecto sumar(a: Entero, b: Entero): Entero { ... }` |
-| `Patronum` | Retornar un valor (return) | `Patronum expresion;` | `Patronum a + b;` |
+| `Patronum` | Retornar un valor (`return`) | `Patronum expresion;` | `Patronum a + b;` |
 | `Revelio` | Salida de datos (imprimir) | `Revelio expresion;` | `Revelio "Hola";` |
-| `Legilimens` | Entrada de datos (input) | `variable = Legilimens();` | `edad = Legilimens();` |
+| `Legilimens` | Entrada de datos (`input`) | `variable = Legilimens();` | `edad = Legilimens();` |
 | `Accio` | Llamar función | `Accio nombre(args);` | `Accio sumar(2, 3);` |
 | `Wingardium` | Ciclo `for` | `Wingardium (init; cond; paso) { ... }` | `Wingardium (i = 0; i < 10; i = i + 1) { ... }` |
 | `Imperio` | Ciclo `while` | `Imperio (condicion) { ... }` | `Imperio (mana < 100) { mana = mana + 1; }` |
@@ -131,16 +59,16 @@ mvn package
 | `Gringotts` | Tipo compuesto: arreglo | `Gringotts<Tipo> nombre;` | `Gringotts<Entero> numeros;` |
 | `Varita` | Tipo compuesto: struct | `Varita Nombre { campo: Tipo; ... }` | `Varita Punto { x: Entero; y: Entero; }` |
 | `Floo` | Importar función o estructura de otro archivo | `Floo nombre desde "archivo.dobby";` | `Floo sumar desde "operaciones.dobby";` |
-| `Obliviate` | Tipo/valor nulo | literal / tipo | `Alohomora resultado: Obliviate;` |
+| `desde` | Conector de la importación | se usa junto a `Floo` | `Floo sumar desde "operaciones.dobby";` |
+| `Obliviate` | Tipo de función sin retorno / valor nulo | literal / tipo | `Expecto f(): Obliviate { ... }` |
 
-> Nota de diseño: Dobby no usa una palabra reservada para la asignación en
-> sí (`=`), solo para la declaración con tipo (`Alohomora`).
+En total son **25 palabras reservadas**: las 17 filas de esta tabla (contando `Protego`/`Finite` y `Lumos`/`Nox` como dos palabras cada una, 20 en total) más los 5 nombres de tipo simple (`Entero`, `Decimal`, `Booleano`, `Texto`, `Caracter`), documentados abajo en Tipos de datos.
 
-## Sintaxis (ejemplos)
+> Dobby no tiene una palabra reservada para la asignación en sí (`=`), solo para la declaración con tipo (`Alohomora`).
 
-**Condicionales anidados (if / else / else-if — el "condicional múltiple"
-se resuelve anidando `Protego`/`Finite`, sin necesitar una palabra
-reservada adicional tipo `switch`):**
+### Sintaxis, en un vistazo
+
+**Condicionales anidados.** El condicional múltiple no tiene una palabra reservada propia (no hay un `switch`); se resuelve anidando `Protego` dentro de `Finite`:
 
 ```
 Protego (vida > 0) {
@@ -156,7 +84,7 @@ Protego (vida > 0) {
 }
 ```
 
-**Función con parámetros y retorno, y función principal:**
+**Función con parámetros y retorno, y la función principal:**
 
 ```
 Expecto sumar(a: Entero, b: Entero): Entero {
@@ -184,53 +112,43 @@ Hogwarts() {
 }
 ```
 
-## Operaciones
+### Operaciones
 
-- **Aritméticas**: `+`, `-`, `*`, `/`
-- **Relacionales**: `==`, `!=`, `>`, `<`, `>=`, `<=`
-- **Lógicas**: `&&` (y), `||` (o), `!` (no)
+- **Aritméticas:** `+`, `-`, `*`, `/`
+- **Relacionales:** `==`, `!=`, `>`, `<`, `>=`, `<=`
+- **Lógicas:** `&&` (y), `||` (o), `!` (no)
 
-## Semántica
+### Semántica
 
-- Todo programa inicia con el bloque `Hogwarts() { }`, la función principal.
-- Toda variable debe declararse antes de usarse, con `Alohomora` o con
-  la forma abreviada `Gringotts<Tipo> nombre;` para arreglos.
-- Toda función `Expecto` que no sea de tipo `Obliviate` (vacío) debe incluir
-  un `Patronum` antes de cerrar su cuerpo.
-- Los bloques de código se delimitan con llaves `{ }`; la indentación no es
-  obligatoria (solo estética).
-- No se puede llamar (`Accio`) una función que no haya sido declarada
-  previamente con `Expecto`, ni usar una variable no declarada con
-  `Alohomora`.
-- Las importaciones (`Floo`) se resuelven en tiempo de compilación; el
-  compilador debe validar: existencia del archivo, existencia de la
-  función o estructura, cantidad de argumentos, compatibilidad de tipos, declaraciones
-  duplicadas e importaciones circulares.
+- Todo programa inicia en `Hogwarts() { }`, el único punto de entrada permitido por proyecto.
+- Los bloques se delimitan con llaves `{ }`; la indentación no es obligatoria, solo estética.
+- Toda variable debe declararse con `Alohomora` (o la forma abreviada de arreglo, `Gringotts<Tipo> nombre;`) antes de usarse. Leer una variable sin inicializar es un error.
+- Dobby **no tiene alcance por bloque**: una variable declarada dentro de un `Protego` o de un `Imperio`/`Wingardium` sigue siendo visible en el resto de la función, no solo dentro de ese bloque. La regla real es más fina de lo que parece a primera vista: si se declara solo en una de las dos ramas de un `Protego`/`Finite`, el compilador no la considera declarada después (tiene que aparecer en ambas ramas); y si se declara dentro de un ciclo, no queda disponible una vez que el ciclo termina, porque no hay garantía de que el ciclo se haya ejecutado al menos una vez.
+- Toda función `Expecto` que no sea de tipo `Obliviate` debe retornar un valor con `Patronum` en todos sus caminos posibles, o el compilador la rechaza.
+- No se puede llamar (`Accio`) una función que no haya sido declarada ni importada.
+- Las importaciones (`Floo`) se resuelven en tiempo de compilación, validando existencia del archivo, existencia de la función o estructura, cantidad de argumentos, compatibilidad de tipos, declaraciones duplicadas, importaciones circulares, y errores dentro del propio archivo importado.
 
-## Tipos de datos
+### Tipos de datos
 
-**Simples (6 — supera el mínimo de 5 exigido, incluyendo el tipo nulo):**
+**Simples (5, más un tipo especial para valores nulos):**
 
 | Tipo Dobby | Equivalente |
 |---|---|
-| Entero | int |
-| Decimal | float |
-| Booleano | bool |
-| Texto | string |
-| Caracter | char |
-| Obliviate | null |
+| `Entero` | int |
+| `Decimal` | float |
+| `Booleano` | bool |
+| `Texto` | string |
+| `Caracter` | char |
+| `Obliviate` | tipo nulo / sin retorno |
 
 **Compuestos (2):**
 
 | Tipo Dobby | Equivalente |
 |---|---|
-| Gringotts | arreglo de tamaño fijo |
-| Varita | struct |
+| `Gringotts<Tipo>` | arreglo |
+| `Varita` | struct |
 
-### Arreglos Gringotts
-
-`Gringotts` ya permite crear, consultar, modificar y recorrer arreglos,
-además de recibirlos o retornarlos en funciones e importaciones.
+#### Arreglos (`Gringotts`)
 
 ```text
 Hogwarts() {
@@ -247,30 +165,12 @@ Hogwarts() {
 
 Salida: `[80, 95, 100]` y `275`.
 
-- También se acepta `Gringotts<Entero> notas = [80, 90, 100];`.
-- Los índices son enteros desde cero hasta `longitud - 1`.
-  `longitud` es de solo lectura. Un índice fuera de rango se reporta al ejecutar.
-- `[]` crea un arreglo vacío. Si se declara sin inicializar, consultar
-  sus elementos o su longitud produce un error de ejecución.
-- Todos los elementos respetan el tipo declarado; al crear un literal,
-  `Decimal` admite enteros y `Texto` admite caracteres.
-- Los arreglos ya creados requieren tipos idénticos para asignaciones y
-  parámetros. Un `Gringotts<Entero>` no se convierte a `Gringotts<Decimal>`.
-- Las asignaciones y los parámetros comparten referencias: cambiar una
-  posición desde una función también cambia el arreglo del llamador.
-  Asignar otro literal reemplaza la referencia, sin modificar el arreglo anterior.
-- El tamaño de cada arreglo es fijo; no se agregan ni eliminan posiciones.
-  `==` y `!=` comparan referencias. No se admite aritmética entre arreglos.
-- Se admiten arreglos anidados: `Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];`,
-  con acceso como `tabla[0][1]`, y arreglos de estructuras como `Gringotts<Punto>`.
+- `longitud` es de solo lectura; un índice fuera de rango se reporta al ejecutar.
+- Todos los elementos respetan el tipo declarado (`Decimal` admite literales enteros, `Texto` admite caracteres).
+- Las asignaciones y los parámetros comparten referencia: modificar una posición desde una función también cambia el arreglo del llamador.
+- Se admiten arreglos anidados (`Gringotts<Gringotts<Entero>> tabla = [[1, 2], [3, 4]];`) y arreglos de estructuras (`Gringotts<Punto>`).
 
-Los ejemplos del editor incluyen arreglos, recorridos y una función que suma
-sus elementos. Las pruebas están en `GringottsTest` y se ejecutan con `mvn test`.
-
-### Estructuras Varita
-
-`Varita` define un tipo con campos. Se declara fuera de las funciones;
-las variables usan su nombre como tipo, no la palabra `Varita`.
+#### Estructuras (`Varita`)
 
 ```text
 Varita Alumno {
@@ -294,342 +194,139 @@ Hogwarts() {
 }
 ```
 
-Salida: `Harry: 85.0` y `Hermione: 95.0`. Este programa completo aparece
-en **Ejemplos > Estructuras (Varita)** para insertarlo en un archivo vacío.
+Salida: `Harry: 85.0` y `Hermione: 95.0`. Este programa está disponible en **Ejemplos > Estructuras (Varita)**, listo para insertar en un archivo vacío.
 
-- La creación usa `Nombre {campo: valor, otro: valor}`. Todos los campos
-  son obligatorios; se rechazan faltantes, duplicados y nombres desconocidos.
-- Se valida el tipo de cada campo. `Decimal` admite valores enteros;
-  los arreglos literales de un campo reciben también su tipo declarado.
-- Los valores se evalúan en el orden escrito, aunque los campos pueden
-  proporcionarse en un orden diferente al de la declaración.
-- Se admiten campos simples, arreglos y otras estructuras, incluidos tipos
-  declarados después. Se pueden encadenar accesos: `grupo.alumnos[0].nota`.
-- Los tipos son nominales: dos estructuras con nombres diferentes no son
-  intercambiables aunque tengan los mismos campos.
-- Las asignaciones, parámetros y retornos comparten referencias.
-  Modificar un campo afecta a todas las referencias; asignar otra instancia
-  reemplaza solo esa referencia. `==` y `!=` comparan identidad.
-- Una variable declarada sin valor, como `Alohomora a: Alumno;`, debe recibir
-  una instancia completa antes de consultar o modificar sus campos.
-- `Revelio` muestra el nombre y los campos en orden de declaración.
-  Las referencias circulares se muestran como `<ciclo>`, sin recursión infinita.
-- Se permiten estructuras vacías (`Varita Vacia {}` y `Vacia {}`) y campos
-  llamados `longitud`. La longitud de los arreglos sigue siendo de solo lectura.
+- La creación usa `Nombre {campo: valor, otro: valor}`; todos los campos son obligatorios.
+- Los tipos son nominales: dos estructuras con los mismos campos pero nombres distintos no son intercambiables.
+- Se pueden encadenar accesos (`grupo.alumnos[0].nota`) y anidar structs dentro de structs.
+- Para compartir un tipo entre archivos: `Floo Alumno desde "tipos.dobby";`. Importar una función o estructura también incorpora los tipos de los que depende.
 
-Para compartir tipos entre archivos, se puede escribir
-`Floo Alumno desde "tipos.dobby";`. El nombre importado debe declararse
-directamente en ese archivo. Importar una función o estructura incorpora
-las estructuras visibles del módulo y de sus dependencias; las funciones
-siguen requiriendo su propio `Floo`. Una misma definición puede llegar por
-varias importaciones, pero dos definiciones distintas con el mismo nombre
-se rechazan para evitar mezclar tipos incompatibles.
+---
 
-Pruebas: `VaritaTest`, los ejemplos del editor y la integración de proyectos,
-ejecutables con `mvn test`.
+## Accesibilidad: la innovación del proyecto
 
-## Robustez y errores
+La característica adicional del proyecto es accesibilidad para personas con discapacidad visual, construida en dos piezas que funcionan juntas:
 
-El compilador distingue errores léxicos, de sintaxis, semánticos y de
-importación. La salida indica archivo, línea, descripción y posible causa.
-Un error detiene esa ejecución, conserva lo impreso antes del fallo y permite
-corregir el programa y volver a ejecutarlo.
+**Texto a voz.** Al compilar o ejecutar, el resultado se lee en voz alta además de mostrarse en pantalla, invocando el sintetizador de voz del propio sistema operativo (`System.Speech` vía PowerShell en Windows con selección automática de voz en español, `espeak` en Linux, `say` en macOS), sin agregar ninguna dependencia externa al proyecto. Está apagada por defecto y se activa con Ctrl+M. También se puede pedir que lea la línea actual (Ctrl+L) o el archivo completo (Ctrl+Shift+L). El código no se lee tal cual: se tokeniza con el mismo *Lexer* del lenguaje y cada símbolo (`{`, `;`, `==`, `&&`...) se traduce a su nombre hablado, para que una línea con símbolos se entienda escuchada y no solo leída. La misma traducción se aplica a los mensajes de error. Una lectura nueva siempre corta a la anterior en vez de acumularse, se puede repetir la última (Ctrl+R) o detener (menú Proyecto), y los diálogos de la aplicación (confirmaciones, `Legilimens`) anuncian su contenido apenas se abren y se cierran con Escape.
 
-### Advertencias
+**Navegación completa por teclado.** Los tres menús de la barra (Archivo, Proyecto, Ayuda) y cada una de sus opciones tienen su propia letra mnemotécnica: toda la aplicación se puede operar con Alt y una letra, sin el mouse. Las pestañas del editor se cambian con las flechas ← → una vez que tienen el foco, y el árbol de archivos se abre con Enter y despliega su menú (renombrar, eliminar, nuevo archivo) con Shift+F10, igual que cualquier aplicación de escritorio convencional.
 
-A diferencia de un error, una advertencia no detiene la compilación: el
-programa compila y puede ejecutarse igual. Se muestran en el panel de
-salida con el prefijo `[ADVERTENCIA]`. Dobby detecta tres casos:
+La disponibilidad real del sintetizador de voz se comprueba al iniciar (no se asume); si el sistema no tiene uno disponible, la aplicación lo avisa en Ajustes y sigue funcionando con normalidad, solo sin audio.
 
-- **Variable declarada y nunca usada**: `Alohomora`/`Gringotts<T>` cuyo
-  valor nunca se lee en ninguna expresión. Asignarle un valor no cuenta
-  como uso; la variable de un `Wingardium` sí cuenta porque su propia
-  condición la lee.
-- **Función declarada y nunca llamada**: ninguna función del proyecto
-  (en este archivo o en los que importa) la invoca con `Accio`.
-  `Hogwarts()` nunca se marca así, es el punto de entrada.
-- **Importación (`Floo`) nunca usada**: la función importada no se llama
-  en el archivo que la importó.
+---
 
-### Ubicación visual de errores
+## El entorno gráfico
 
-Al compilar o ejecutar, si el error reportado corresponde a una línea del
-archivo abierto en la pestaña activa, el editor resalta esa línea con un
-fondo rojo y marca su número en el margen izquierdo. La marca desaparece
-automáticamente en cuanto se edita el archivo, se cambia de pestaña o se
-vuelve a compilar/ejecutar sin error. Si el error ocurre en un archivo
-distinto al que está abierto (por ejemplo uno importado con `Floo`), solo
-se indica por texto y voz, ya que el editor no puede resaltar un archivo
-que no tiene cargado.
+### Identidad visual
 
-- Los símbolos desconocidos y operadores incompletos, como `&` o `|`, ya
-  no se ignoran. Los operadores lógicos completos son `&&` y `||`.
-- Se admiten comentarios `// hasta fin de línea` y `/* de varias líneas */`.
-  Los comentarios de bloque no se anidan. Los textos y comentarios sin cerrar
-  reportan la línea donde comenzaron.
-- Dentro de textos se admiten `\"`, `\\`, `\n`, `\r` y `\t`.
-  Para rutas de `Floo`, se recomienda `"lib/tipos.dobby"`; una barra
-  invertida literal debe escribirse como `\\`.
-- `Entero` admite desde `-2147483648` hasta `2147483647`.
-  Los literales y operaciones fuera de rango producen un error, sin dar la
-  vuelta al rango numérico. `Decimal` no admite `NaN` ni infinito.
-- Los números se comparan por su valor: `1 == 1.0` produce `Lumos`.
-  Los arreglos y estructuras siguen comparándose por referencia.
-- Leer una variable sin inicializar produce un error. `Obliviate` mantiene
-  su valor nulo. Una declaración dentro de un ciclo se reinicia en cada vuelta;
-  no conserva el valor de la vuelta anterior.
-- Cancelar `Legilimens` detiene la ejecución. Una entrada inválida para el
-  tipo esperado se reporta como error, sin mostrar una excepción de Java.
+La idea fue transmitir el universo de Harry Potter usando directamente su estética, no solo su vocabulario: la mascota es el propio Dobby, el elfo doméstico, con una varita como accesorio, y la tipografía de los títulos está inspirada en el logo oficial de los libros.
 
-### Límites de protección
+- **Pantalla de bienvenida:** un cielo nocturno animado con estrellas, una luna con resplandor, la silueta de un castillo, chispas flotando del color de acento activo, y una snitch dorada que se mueve sola por la pantalla. La mascota queda centrada, con un aura que pulsa suavemente detrás.
+- **Transición de andén:** entre la bienvenida y el entorno principal hay una animación propia con una frase aleatoria del universo de Harry Potter, con su atribución.
+- **Selector de casa:** desde Ajustes se elige una de las cuatro casas de Hogwarts, lo que cambia el color de acento de toda la interfaz (bordes, archivo activo en el árbol, resaltados).
+- **Cursor de varita:** al pasar sobre el editor o la bienvenida, el cursor del mouse se reemplaza por un ícono de varita.
 
-Estos límites son fijos y están pensados para programas educativos:
+Todo esto se construyó en Swing puro, sin ninguna librería gráfica externa: `javax.swing.Timer` para las animaciones (nunca `Thread.sleep()`, que bloquearía la interfaz), `Graphics2D` con antialiasing para las formas propias, y una clase `TemaManager` que centraliza el color de acento para que cambiar de casa actualice toda la interfaz desde un solo lugar.
 
-| Recurso | Límite |
-|---|---|
-| Fuente por archivo | 1 000 000 caracteres y 100 000 tokens |
-| Anidamiento del parser | 64 niveles, contando bloques y expresiones |
-| Profundidad de expresiones en validación | 64 niveles |
-| Cadena de importaciones | 64 archivos con ruta en la cadena activa |
-| Ejecución | 100 000 pasos, contando sentencias, expresiones y recorrido de salida |
-| Llamadas simultáneas | 64, incluyendo `Hogwarts` |
-| Expresiones activas en ejecución | 128 niveles |
-| Recorrido de arreglos y estructuras al imprimir | 64 niveles |
-| Texto individual | 65 536 caracteres |
-| Salida acumulada | 20 000 caracteres, incluidos saltos de línea |
+### El editor en uso
 
-Superar un límite produce un error controlado. El límite de pasos puede
-detener también un programa finito muy grande; no es una detección matemática
-de ciclos infinitos. Los contadores se reinician al ejecutar de nuevo.
-La ejecución sigue siendo síncrona; estos límites no sustituyen un entorno
-aislado ni una ejecución en segundo plano.
+El entorno principal tiene el árbol de archivos a la izquierda, el editor con pestañas y numeración de líneas arriba a la derecha, y el panel de salida abajo. Compilar y Ejecutar son pasos separados, con sus propios botones y atajos (F6 y F5).
 
-Las salidas de más de 200 caracteres se muestran completas, sin esperar la
-animación carácter por carácter.
+Cuando algo falla, el error se muestra en el panel de salida con archivo, línea, descripción y una posible causa, **y además se resalta visualmente**: la línea exacta del error aparece marcada en rojo en el editor, con su número también en rojo en el margen, siempre que el error pertenezca al archivo que está abierto en la pestaña activa. La marca desaparece sola en cuanto se edita, se cambia de pestaña, o se vuelve a compilar sin ese error.
 
-Prueba manual, en un archivo independiente o como único principal del proyecto:
+Además de errores (que detienen la compilación), Dobby detecta **advertencias** que no la detienen pero sí avisan en el panel de salida con el prefijo `[ADVERTENCIA]`: una variable declarada que nunca se lee, una función que nunca se llama desde ningún archivo del proyecto, y una importación con `Floo` que nunca se usa.
 
-```text
-Hogwarts() {
-    Revelio "Antes del ciclo";
-    Imperio (Lumos) {}
-}
+### Proyectos y archivo principal
+
+Un proyecto es simplemente una carpeta con archivos `.dobby`. **Archivo > Nuevo proyecto...** crea una carpeta con un `principal.dobby` ya ejecutable; **Archivo > Abrir carpeta...** abre uno existente. El árbol permite crear, abrir, renombrar y eliminar archivos, y marca con `(principal)` el que contiene `Hogwarts()`, sin importar cómo se llame el archivo. Debe existir exactamente un `Hogwarts()` en todo el proyecto; si no hay ninguno, o hay más de uno, se avisa antes de intentar compilar nada. Compilar y Ejecutar siempre parten del archivo principal, incluso si la pestaña activa es otra.
+
+### Un proyecto de ejemplo, listo para abrir
+
+La carpeta [`ejemplos/calificaciones`](ejemplos/calificaciones) tiene un proyecto real de tres archivos, listo para abrir con **Archivo > Abrir carpeta...** y ejecutar con F5: importa un `Varita` y varias funciones con `Floo`, arma un `Gringotts<Alumno>`, recorre sus campos con `Wingardium`, decide aprobado o reprobado con `Protego`/`Finite` llamando a una función directo en la condición, y calcula un factorial por recursión. Un programa corto, pero que toca casi todas las piezas del lenguaje a la vez.
+
+---
+
+## Arquitectura
+
+Dobby sigue una arquitectura MVC ampliada con un `FlowController` (el estado de la aplicación) y un motor de lenguaje completamente separado de la interfaz:
+
+```
+Vista (Swing)  <-->  Controlador  <-->  FlowController (estado de la app)
+                           |
+                           v
+                Motor (Lexer -> Parser -> Enlazador -> Intérprete)
 ```
 
-Se conserva `Antes del ciclo` y aparece el error del límite de pasos en la
-línea del `Imperio`. Reemplaza el ciclo por `Revelio "Terminado";` y vuelve a
-ejecutar para comprobar la recuperación.
-
-Pruebas automatizadas: `RobustezTest` y pruebas de integración del controlador,
-proyectos, formato de errores y panel de salida. Ejecutar con `mvn clean test`.
-
-## Proyectos y archivo principal
-
-- **Archivo > Nuevo proyecto...** crea una carpeta nueva con un
-  `principal.dobby` ejecutable. No sobrescribe carpetas existentes.
-- **Archivo > Abrir carpeta...** abre un proyecto existente.
-- El punto de entrada es el archivo que declara `Hogwarts()`, sin depender
-  de su nombre. El árbol lo identifica con `(principal)`.
-- Debe existir un único bloque `Hogwarts()` entre los archivos `.dobby`
-  del proyecto, incluidas las subcarpetas visibles. Las carpetas cuyo nombre
-  comienza con punto se excluyen del árbol y de esta búsqueda.
-- **Compilar** y **Ejecutar** parten de ese archivo aunque esté activa una
-  pestaña auxiliar. Se revisa la sintaxis de los archivos del proyecto y
-  se enlaza el principal con sus dependencias; las importaciones deben
-  permanecer dentro de la carpeta del proyecto.
-- Los archivos abiertos aportan su contenido actual, incluso sin guardar.
-  Una pestaña sin ruta todavía no pertenece al proyecto.
-- Los archivos nuevos dentro del proyecto empiezan vacíos para no agregar
-  otro punto de entrada por accidente.
-- **Proyecto > Actualizar archivos** actualiza el árbol después de cambios
-  externos. La ejecución también vuelve a buscar el principal.
-- **Proyecto > Cerrar proyecto** conserva las pestañas y sus cambios;
-  sin proyecto abierto se compila o ejecuta el archivo activo.
-
-Prueba manual: crear un proyecto, agregar `operaciones.dobby` con una
-función `Expecto`, importarla desde el principal y ejecutar mientras
-`operaciones.dobby` está activo. Luego agregar un segundo `Hogwarts()`
-y comprobar que la ejecución se detiene con un error de proyecto.
-
-Pruebas automatizadas: `mvn test`.
-
-### Proyecto de ejemplo
-
-La carpeta [`ejemplos/calificaciones`](ejemplos/calificaciones) tiene un
-proyecto multi-archivo listo para abrir con **Archivo > Abrir carpeta...**
-y ejecutar con F5. `principal.dobby` importa un `Varita` (`alumnos.dobby`)
-y funciones (`operaciones.dobby`) con `Floo`, arma un `Gringotts<Alumno>`,
-recorre sus campos con `Wingardium`, decide con `Protego`/`Finite` llamando
-a una función directamente en la condición, y calcula un factorial con
-recursión.
-
-## Menú de opciones (requisito del entorno gráfico)
-
-El entorno debe permitir consultar, sin salir de la aplicación: palabras
-reservadas, sintaxis, estructuras de control, funciones, operaciones,
-semántica, tipos de datos, importaciones y ejemplos — todo el contenido de
-este README debe quedar accesible también desde ahí.
-
-## Diseño gráfico (entorno / mini-IDE)
-
-Concepto general: transmitir la magia de Harry Potter usando directamente
-la estética del universo — la mascota es el propio Dobby (el elfo
-doméstico), con una varita como accesorio y tipografía inspirada en el
-logo oficial de los libros, para que la identidad visual se sienta lo más
-fiel posible al material original.
-
-**Assets usados** (en `src/main/resources/assets/`):
-- `imagenes/Dobby.png` — mascota (elfo con laptop, audífonos y taza de
-  café con código, estilo "programador").
-- `imagenes/Varita.png` — ícono de varita (para el cursor del editor y el
-  botón "Alohomora — Entrar").
-- `fuentes/HARRYP__.TTF` — tipografía inspirada en el logo de los libros,
-  para el tagline y títulos. Se carga con `Font.createFont(...)` desde el
-  classpath (no depende de que esté instalada en el sistema).
-
-**Pantalla de bienvenida:**
-- Fondo: cielo nocturno con degradado oscuro, estrellas parpadeando, luna
-  sutil, silueta genérica de castillo abajo (formas geométricas simples,
-  sin escudos). Chispas doradas decorativas flotando alrededor.
-- Mascota elfo centrada y grande, con sombrero puntiagudo y varita.
-- Snitch dorada volando de forma aleatoria por toda la pantalla, cambiando
-  de posición cada par de segundos con transición suave.
-- Tagline en cursiva ("un lenguaje con un poco de magia") arriba, nombre
-  "dobby" pequeño y discreto debajo.
-- Botón principal: "Alohomora — Entrar", con ícono de varita.
-- Esquina superior derecha: 4 botones solo-ícono — Ajustes ⚙, Créditos,
-  Ayuda, Acerca de.
-
-**Pantalla de proyecto vacío** (justo después de la bienvenida si no hay
-proyecto abierto): árbol de archivos vacío con "Sin proyecto abierto", un
-botón para crear uno nuevo, e ícono/mensaje central invitando a escribir
-(ej. "Crea o abre un proyecto para empezar a escribir hechizos").
-
-**Pantalla principal (editor en uso):** árbol de archivos a la izquierda
-con el archivo activo resaltado, editor con resaltado de sintaxis
-(palabras reservadas en el color de acento del tema activo), botones
-Compilar/Ejecutar arriba, panel de salida abajo.
-
-**Estado de error de compilación:** el archivo con problemas se marca en
-rojo en el árbol, la línea del error se resalta en el editor, el mensaje
-aparece en el panel de salida con tipo/archivo/línea/causa (conecta
-directo con la sección "Segmento de salida" del enunciado), y "Ejecutar"
-se ve atenuado/deshabilitado mientras el error no se resuelva.
-
-**Detalles interactivos:**
-- **Cursor de varita**: al pasar sobre el editor, el cursor cambia a un
-  ícono de varita en vez de la flecha/manita normal.
-- **Selector de casa**: en Ajustes, 4 colores de acento (roja, verde, azul,
-  amarilla — nombres neutros, sin nombres/escudos oficiales) que cambian
-  el color de acento de toda la interfaz (bordes de botones, archivo
-  activo en el árbol, palabras reservadas en el editor).
-- **Sello de cera para guardado**: ícono junto al archivo activo, "sellado"
-  (guardado) o "abierto/roto" (cambios sin guardar).
-- **Mascota que se teletransporta**: al compilar o ejecutar, la mascota
-  aparece con efecto "poof" (chispas que se expanden, crece de tamaño 0 a
-  1 con rebote), entrega el resultado (el sello se "rompe" y el mensaje
-  aparece), y tras un par de segundos se desvanece con el efecto inverso.
-  Se eligió sobre una lechuza mensajera porque: los elfos domésticos
-  canónicamente se teletransportan, reutiliza la misma mascota (menos
-  trabajo de arte), y es más simple de animar en Swing que una
-  trayectoria de vuelo.
-- **A futuro (fuera de alcance de esta entrega)**: "compañero mágico" — la
-  mascota crece/evoluciona según logros del usuario (pruebas superadas,
-  funcionalidades completadas).
-
-**Implementación técnica** (Swing puro, sin librerías externas de UI):
-- `javax.swing.Timer` para toda animación — nunca `Thread.sleep()` (bloquea
-  el hilo de eventos/EDT).
-- `Graphics2D` con antialiasing para formas propias (castillo, chispas,
-  sello de cera).
-- `ImageIcon` / `Toolkit.createCustomCursor()` para cargar la mascota y el
-  cursor de varita como PNG con transparencia.
-- Una clase `TemaManager` que centraliza los colores de casa, para que
-  cambiar el tema actualice toda la interfaz desde un solo lugar.
-
-**Pendiente**: guardar en el repo (por ejemplo en `docs/mockups/`) las
-capturas/mockups de referencia de las pantallas.
-
-## Estructura del proyecto
+La Vista solo presenta información y captura eventos, sin lógica propia. El Controlador escucha esos eventos y coordina la Vista, el `FlowController` y el Motor, sin conocer los detalles internos del lenguaje. El Motor convierte texto fuente en ejecución real, en fases independientes, igual que un compilador de verdad: el *Lexer* tokeniza, el *Parser* construye el árbol de sintaxis por descenso recursivo con precedencia de operadores, el *Enlazador* resuelve las importaciones entre archivos y corre la validación semántica, y el *Intérprete* recorre el árbol para ejecutarlo.
 
 ```
 Dobby/
 ├── pom.xml
 ├── README.md
+├── ejemplos/
+│   └── calificaciones/              # Proyecto de ejemplo multiarchivo
 ├── src/main/resources/assets/
-│   ├── imagenes/
-│   │   ├── Dobby.png        # Mascota
-│   │   └── Varita.png       # Cursor / ícono de varita
-│   └── fuentes/
-│       └── HARRYP__.TTF     # Tipografía de titulos/tagline
+│   ├── imagenes/                    # Mascota, casas, cursor de varita
+│   └── fuentes/HARRYP__.TTF         # Tipografía de títulos
 └── src/main/java/dobby/
     ├── Main.java
-    ├── vista/
-    │   ├── MainView.java
-    │   ├── FileTreePanel.java
-    │   ├── EditorPanel.java
-    │   ├── OutputPanel.java
-    │   └── DocumentacionDialog.java      # Menú de opciones / consulta del lenguaje
-    ├── controlador/
-    │   └── Controlador.java
-    ├── flow/
-    │   └── FlowController.java
-    ├── util/
-    │   ├── FileUtil.java
-    │   ├── ErrorFormatter.java
-    │   ├── PalabrasReservadas.java
-    │   └── LectorVoz.java                # Innovación: accesibilidad por voz (TTS)
-    ├── modelo/
-    │   ├── Proyecto.java
-    │   └── ArchivoDobby.java
+    ├── vista/                       # MainView, editor, árbol, diálogos, ayuda
+    ├── controlador/                 # Controlador.java
+    ├── flow/                        # FlowController.java
+    ├── modelo/                      # Proyecto.java, ArchivoDobby.java
+    ├── util/                        # Errores, voz, traductor de símbolos, temas
     └── motor/
-        ├── lexer/
-        │   ├── Token.java
-        │   ├── TipoToken.java
-        │   └── Lexer.java
-        ├── parser/
-        │   ├── Nodo.java
-        │   ├── NodoPrograma.java
-        │   ├── NodoSi.java                    # Protego / Finite
-        │   ├── NodoMientras.java              # Imperio (while)
-        │   ├── NodoPara.java                  # Wingardium (for)
-        │   ├── NodoFuncion.java               # Expecto / Hogwarts
-        │   ├── NodoDeclaracionVariable.java    # Alohomora
-        │   ├── NodoAsignacion.java
-        │   ├── NodoLlamada.java               # Accio
-        │   ├── NodoRetorno.java               # Patronum
-        │   ├── NodoImpresion.java             # Revelio
-        │   ├── NodoEntrada.java               # Legilimens
-        │   ├── NodoImportacion.java           # Floo
-        │   ├── NodoEstructura.java            # Varita
-        │   └── Parser.java
-        └── interprete/
-            ├── Interprete.java
-            └── ResultadoEjecucion.java
+        ├── lexer/                   # Token, Lexer
+        ├── parser/                  # Nodo* (AST), Parser
+        ├── enlazador/                # Enlazador, ValidadorSemantico
+        └── interprete/              # Interprete, ResultadoEjecucion
 ```
 
-## Estado actual
+---
 
-El proyecto incluye lexer, parser, intérprete, validación semántica,
-importaciones y gestión de proyectos con detección del archivo principal.
-`Gringotts` está implementado con acceso por índice, modificación,
-longitud, funciones y pruebas automatizadas.
+## Robustez
 
-`Varita` está implementado con creación de valores, lectura y escritura de
-campos, tipos anidados, arreglos, funciones, importaciones y pruebas.
+El compilador distingue errores léxicos, de sintaxis, semánticos y de importación; el intérprete, errores de ejecución. Un error detiene esa compilación o ejecución, conserva lo que ya se había mostrado, y permite corregir el programa y volver a intentarlo. Algunos detalles de robustez que vale la pena conocer:
 
-La lectura de voz (TTS) está implementada: al compilar o ejecutar, el
-resultado se lee en voz alta con el motor de voz del sistema operativo
-(`System.Speech` vía PowerShell en Windows, `espeak` en Linux, `say` en
-macOS), sin librerías externas. Se puede desactivar desde Ajustes, y si el
-sistema no tiene un lector de voz disponible la app sigue funcionando
-normalmente, solo sin audio.
+- Los símbolos desconocidos y los operadores incompletos (`&` o `|` sueltos) ya no se ignoran en silencio: se reportan como error, con una sugerencia (`usa &&`).
+- Se admiten comentarios `// de una línea` y `/* de varias */` (sin anidar), y escapes dentro de texto (`\"`, `\\`, `\n`, `\r`, `\t`).
+- `Entero` admite el rango de `-2147483648` a `2147483647`; salirse de ahí es un error, no un desbordamiento silencioso. `Decimal` no admite `NaN` ni infinito.
+- Los números se comparan por su valor (`1 == 1.0` es verdadero); los arreglos y estructuras se comparan por referencia.
+- La ejecución tiene límites de protección fijos (cantidad de pasos, llamadas simultáneas, profundidad de expresiones, tamaño de texto y de salida), pensados para que un programa con un error de lógica, como un ciclo infinito, no deje la aplicación sin responder.
 
-La navegación por teclado incluye mnemonics: cada menú y cada opción se
-abre con Alt + letra subrayada (por ejemplo Alt+A abre Archivo, y con el
-menú abierto, P abre "Nuevo proyecto..."). No hay letras repetidas dentro
-de un mismo menú.
+---
 
-El compilador y el intérprete incluyen validación léxica, comentarios y escapes,
-controles numéricos y de inicialización, límites de ejecución y pruebas de
-recuperación tras errores.
+## Pruebas
+
+El proyecto tiene una suite de pruebas automatizadas con JUnit que cubre el Lexer, el Parser, el Enlazador (importaciones, ciclos circulares, advertencias), `Gringotts`, `Varita`, los límites de ejecución y la integración completa del controlador y los proyectos. Se ejecuta con:
+
+```
+mvn test
+```
+
+---
+
+## Cómo correrlo
+
+**Requisitos:** JDK 21 o superior, Apache Maven 3.9 o superior.
+
+```bash
+# Compilar
+mvn compile
+
+# Correr directo (abre la ventana principal)
+mvn compile exec:java
+
+# Generar el .jar ejecutable
+mvn package
+java -jar target/dobby.jar
+```
+
+No hay ninguna dependencia fuera del JDK estándar (JUnit se usa solo para las pruebas), así que el `.jar` generado corre en cualquier máquina con Java 21, sin instalación adicional.
+
+---
+
+## Integrantes
+
+- José Andrés Mora Mora
+- Darien Arroyo Castro
