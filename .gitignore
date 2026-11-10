@@ -3,6 +3,10 @@ target/
 *.jar
 *.log
 
+# Ejecutable nativo generado con jpackage (ver packaging/build-exe.bat)
+packaging/input/
+packaging/output/
+
 # IDE
 .idea/
 *.iml

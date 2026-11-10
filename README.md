@@ -324,6 +324,16 @@ java -jar target/dobby.jar
 
 No hay ninguna dependencia fuera del JDK estándar (JUnit se usa solo para las pruebas), así que el `.jar` generado corre en cualquier máquina con Java 21, sin instalación adicional.
 
+### Ejecutable nativo (opcional)
+
+Si preferís abrir Dobby con doble clic, como cualquier otra aplicación de escritorio, en vez de usar la consola:
+
+```bash
+packaging\build-exe.bat
+```
+
+Esto genera `packaging/output/Dobby/Dobby.exe`. Copiá esa carpeta completa (`Dobby`) a donde quieras, por ejemplo el Escritorio, y abrí `Dobby.exe` con doble clic. Lleva el Java necesario empaquetado adentro, así que ni siquiera hace falta tener Java instalado para usarlo (solo para generarlo, con el JDK 21).
+
 ---
 
 ## Integrantes
