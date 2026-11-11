@@ -6,11 +6,13 @@ import dobby.motor.lexer.Token;
 import dobby.util.LectorVoz;
 import dobby.util.TemaManager;
 
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -22,6 +24,9 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import javax.swing.text.Utilities;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -36,12 +41,17 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Shape;
 import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class EditorPanel extends JPanel {
     private static final Color FONDO = new Color(20, 16, 34);
@@ -58,6 +68,7 @@ public class EditorPanel extends JPanel {
     private final JTextPane areaTexto;
     private final PanelNumerosLinea panelNumeros;
     private final Lexer lexer = new Lexer();
+    private final UndoManager deshacerManager = new UndoManager();
     private final Highlighter.HighlightPainter pintorLineaActual = new ResaltadoLinea(COLOR_LINEA_ACTUAL);
     private final Highlighter.HighlightPainter pintorLineaError = new ResaltadoLinea(COLOR_LINEA_ERROR);
     private boolean actualizandoEstilo;
@@ -149,6 +160,8 @@ public class EditorPanel extends JPanel {
         areaTexto.setForeground(TEXTO_NORMAL);
         areaTexto.setCaretColor(Color.WHITE);
         aplicarCursorVarita();
+        configurarIndentacion();
+        areaTexto.getDocument().addUndoableEditListener(deshacerManager);
 
         areaTexto.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -187,6 +200,153 @@ public class EditorPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
 
         TemaManager.getInstancia().agregarOyente(this::resaltar);
+    }
+
+    private static final int ESPACIOS_POR_NIVEL = 4;
+
+    private void configurarIndentacion() {
+        areaTexto.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "indentarTab");
+        areaTexto.getActionMap().put("indentarTab", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertarEnCursor(" ".repeat(ESPACIOS_POR_NIVEL));
+            }
+        });
+
+        areaTexto.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "nuevaLineaIndentada");
+        areaTexto.getActionMap().put("nuevaLineaIndentada", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                insertarNuevaLineaIndentada();
+            }
+        });
+
+        areaTexto.getInputMap(WHEN_FOCUSED).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.SHIFT_DOWN_MASK | InputEvent.ALT_DOWN_MASK),
+            "formatearDocumento");
+        areaTexto.getActionMap().put("formatearDocumento", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                formatear();
+            }
+        });
+
+        int ctrl = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        areaTexto.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ctrl), "deshacer");
+        areaTexto.getActionMap().put("deshacer", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (deshacerManager.canUndo()) {
+                        deshacerManager.undo();
+                    }
+                } catch (CannotUndoException ex) {
+                }
+            }
+        });
+
+        areaTexto.getInputMap(WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, ctrl), "rehacer");
+        areaTexto.getInputMap(WHEN_FOCUSED).put(
+            KeyStroke.getKeyStroke(KeyEvent.VK_Z, ctrl | InputEvent.SHIFT_DOWN_MASK), "rehacer");
+        areaTexto.getActionMap().put("rehacer", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    if (deshacerManager.canRedo()) {
+                        deshacerManager.redo();
+                    }
+                } catch (CannotRedoException ex) {
+                }
+            }
+        });
+    }
+
+    public void formatear() {
+        String textoActual = areaTexto.getText();
+        if (textoActual.isEmpty()) {
+            return;
+        }
+        int lineaCaret = getLineaActual();
+        String formateado = reindentar(textoActual);
+        if (formateado.equals(textoActual)) {
+            return;
+        }
+        setTexto(formateado);
+        irALinea(lineaCaret);
+        notificarCambio();
+    }
+
+    private String reindentar(String texto) {
+        Map<Integer, int[]> llavesPorLinea = new HashMap<>();
+        try {
+            for (Token token : lexer.tokenizar(texto)) {
+                if (token.getTipo() != TipoToken.SIMBOLO) {
+                    continue;
+                }
+                int[] conteo = llavesPorLinea.computeIfAbsent(token.getLinea(), k -> new int[2]);
+                if ("{".equals(token.getValor())) {
+                    conteo[0]++;
+                } else if ("}".equals(token.getValor())) {
+                    conteo[1]++;
+                }
+            }
+        } catch (RuntimeException e) {
+            return texto;
+        }
+
+        String[] lineas = texto.split("\n", -1);
+        StringBuilder resultado = new StringBuilder();
+        int nivel = 0;
+        for (int i = 0; i < lineas.length; i++) {
+            String contenido = lineas[i].strip();
+            int[] conteo = llavesPorLinea.getOrDefault(i + 1, new int[2]);
+            int aperturas = conteo[0];
+            int cierres = conteo[1];
+
+            if (contenido.isEmpty()) {
+                resultado.append("");
+            } else {
+                if (contenido.startsWith("}") && cierres > 0) {
+                    nivel = Math.max(0, nivel - 1);
+                    cierres--;
+                }
+                resultado.append(" ".repeat(nivel * ESPACIOS_POR_NIVEL)).append(contenido);
+                nivel = Math.max(0, nivel + aperturas - cierres);
+            }
+            if (i < lineas.length - 1) {
+                resultado.append("\n");
+            }
+        }
+        return resultado.toString();
+    }
+
+    private void irALinea(int numeroLinea) {
+        Element raiz = areaTexto.getDocument().getDefaultRootElement();
+        int indice = Math.max(0, Math.min(numeroLinea - 1, raiz.getElementCount() - 1));
+        areaTexto.setCaretPosition(raiz.getElement(indice).getStartOffset());
+    }
+
+    private void insertarNuevaLineaIndentada() {
+        try {
+            int posicion = areaTexto.getCaretPosition();
+            Element raiz = areaTexto.getDocument().getDefaultRootElement();
+            int inicioLinea = raiz.getElement(raiz.getElementIndex(posicion)).getStartOffset();
+            String textoLinea = areaTexto.getDocument().getText(inicioLinea, posicion - inicioLinea);
+            String sangria = obtenerSangria(textoLinea);
+            if (textoLinea.strip().endsWith("{")) {
+                sangria = sangria + " ".repeat(ESPACIOS_POR_NIVEL);
+            }
+            areaTexto.getDocument().insertString(posicion, "\n" + sangria, null);
+        } catch (BadLocationException e) {
+        }
+    }
+
+    private String obtenerSangria(String texto) {
+        int i = 0;
+        while (i < texto.length() && (texto.charAt(i) == ' ' || texto.charAt(i) == '\t')) {
+            i++;
+        }
+        return texto.substring(0, i);
     }
 
     private void aplicarCursorVarita() {
@@ -307,6 +467,7 @@ public class EditorPanel extends JPanel {
         try {
             areaTexto.setText(texto);
             areaTexto.setCaretPosition(0);
+            deshacerManager.discardAllEdits();
         } finally {
             cargandoTexto = false;
         }
