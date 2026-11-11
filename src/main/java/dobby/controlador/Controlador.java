@@ -172,7 +172,7 @@ public class Controlador {
     public void manejarLeerArchivo() {
         String codigo = vista.getPanelEditor().getTexto();
         if (codigo == null || codigo.isBlank()) {
-            LectorVoz.leer("El archivo esta vacio.");
+            LectorVoz.leer("El archivo está vacío.");
             return;
         }
         LectorVoz.leer(TraductorCodigo.aTextoHablado(codigo));
@@ -183,7 +183,7 @@ public class Controlador {
         flowController.setProyectoActivo(null);
         vista.getPanelArbolArchivos().limpiar();
         refrescarVista();
-        vista.getPanelSalida().agregarMensaje("Proyecto cerrado. Las pestanas abiertas se conservan.");
+        vista.getPanelSalida().agregarMensaje("Proyecto cerrado. Las pestañas abiertas se conservan.");
     }
 
     public void manejarRefrescarProyecto() {
@@ -227,7 +227,7 @@ public class Controlador {
                 lineas.add("• " + pendientes.get(i).getNombre());
             }
             if (pendientes.size() > 4) {
-                lineas.add("... y " + (pendientes.size() - 4) + " mas");
+                lineas.add("... y " + (pendientes.size() - 4) + " más");
             }
             int eleccion = DialogoOpciones.elegir(vista, "Cambios sin guardar", lineas.toArray(new String[0]),
                 "Guardar todo", "Salir sin guardar", "Cancelar");
@@ -597,7 +597,7 @@ public class Controlador {
         Path ruta = normalizar(rutaOriginal);
         String nombre = ruta.getFileName().toString();
         int eleccion = DialogoOpciones.elegir(vista, "Eliminar archivo",
-            new String[]{"¿Eliminar «" + nombre + "»?", "Esta accion no se puede deshacer."},
+            new String[]{"¿Eliminar «" + nombre + "»?", "Esta acción no se puede deshacer."},
             "Eliminar", "Cancelar");
         if (eleccion != 0) {
             return;
