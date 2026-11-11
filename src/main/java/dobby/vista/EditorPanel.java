@@ -161,7 +161,13 @@ public class EditorPanel extends JPanel {
         areaTexto.setCaretColor(Color.WHITE);
         aplicarCursorVarita();
         configurarIndentacion();
-        areaTexto.getDocument().addUndoableEditListener(deshacerManager);
+        areaTexto.getDocument().addUndoableEditListener(evento -> {
+            if (evento.getEdit() instanceof DocumentEvent documentoEvento
+                && documentoEvento.getType() == DocumentEvent.EventType.CHANGE) {
+                return;
+            }
+            deshacerManager.undoableEditHappened(evento);
+        });
 
         areaTexto.getDocument().addDocumentListener(new DocumentListener() {
             @Override
